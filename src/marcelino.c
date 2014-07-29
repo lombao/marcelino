@@ -136,29 +136,24 @@ int main (int argc, char **argv)
     /* *********************************************************** */
 
     /* Main loop */
-    for (;;)
-    {
-      ev = xcb_wait_for_event(dpy);
-        switch (ev->response_type & ~0x80) {
+    while( (ev = xcb_wait_for_event(dpy)) ) {
+    
+      switch (ev->response_type & ~0x80) {
         
-        case XCB_BUTTON_PRESS:
-        {
+        case XCB_BUTTON_PRESS: 
 		  mr_deal_with_button_press(ev);
-        }
-        break;
+          break;
 
-        case XCB_MOTION_NOTIFY:
-        {
+        case XCB_MOTION_NOTIFY: 
 		  mr_deal_with_motion_notify(ev);    
-        }
-        break;
+          break;
 
         case XCB_BUTTON_RELEASE:
-            xcb_ungrab_pointer(dpy, XCB_CURRENT_TIME);
-            xcb_flush(dpy);
-        break;
-        }
-    }
+          xcb_ungrab_pointer(dpy, XCB_CURRENT_TIME);
+          xcb_flush(dpy);
+          break;
+      } /* end switch */
+    } /* end while */
 
- return 0;
+  return 0;
  } 
