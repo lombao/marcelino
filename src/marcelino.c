@@ -18,6 +18,7 @@
 /* Global variables */
 xcb_connection_t *dpy;
 xcb_drawable_t root;
+xcb_screen_t *screen;
 uint32_t values[3];
 
 
@@ -74,7 +75,7 @@ int mr_deal_with_button_press (xcb_generic_event_t *ev)
 
 
 
-int mr_deal_with_button_press (xcb_generic_event_t *ev)
+int mr_deal_with_motion_notify(xcb_generic_event_t *ev)
  {
   xcb_query_pointer_reply_t *pointer;
   xcb_button_press_event_t *e;
@@ -107,10 +108,6 @@ int mr_deal_with_button_press (xcb_generic_event_t *ev)
 int main (int argc, char **argv)
  {
 
-   uint32_t values[3];
-
-   
-   xcb_screen_t *screen;
    xcb_generic_event_t *ev;
 
 
