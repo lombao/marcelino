@@ -70,7 +70,7 @@ int mr_deal_with_button_press (xcb_generic_event_t *ev)
     xcb_grab_pointer(dpy, 0, root, XCB_EVENT_MASK_BUTTON_RELEASE
                     | XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_POINTER_MOTION_HINT,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE, XCB_CURRENT_TIME);
-    xcb_flush(dpy);	 
+   	 
  }
 
 
@@ -90,7 +90,7 @@ int mr_deal_with_motion_notify(xcb_generic_event_t *ev)
        values[1] = (pointer->root_y + geom->height > screen->height_in_pixels)?
                    (screen->height_in_pixels - geom->height):pointer->root_y;
        xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
-       xcb_flush(dpy);
+    
      }
      else
        if (values[2] == 3) { /* resize */
@@ -98,7 +98,7 @@ int mr_deal_with_motion_notify(xcb_generic_event_t *ev)
              values[0] = pointer->root_x - geom->x;
              values[1] = pointer->root_y - geom->y;
              xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
-             xcb_flush(dpy);
+       
             }	 
  }
 
@@ -142,17 +142,27 @@ int main (int argc, char **argv)
         
         case XCB_BUTTON_PRESS: 
 		  mr_deal_with_button_press(ev);
+          xcb_flush(dpy);
           break;
 
         case XCB_MOTION_NOTIFY: 
 		  mr_deal_with_motion_notify(ev);    
+		  xcb_flush(dpy);
           break;
 
         case XCB_BUTTON_RELEASE:
           xcb_ungrab_pointer(dpy, XCB_CURRENT_TIME);
           xcb_flush(dpy);
           break;
+          
+        default:
+           /* Unknown event, alert!!! */
+           printf("ALERT: Unknown event: %d\n",ev->response_type);
+           exit(1);
+           break;
+           
       } /* end switch */
+     free(ev); /* We free the memory reserved by  xcb_wait_for_event */
     } /* end while */
 
   return 0;
