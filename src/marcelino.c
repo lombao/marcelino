@@ -16,9 +16,11 @@
 
 /* *************    */
 /* Global variables */
-xcb_connection_t *dpy;
+xcb_connection_t *xconn;
 xcb_drawable_t root;
+xcb_drawable_t focuswin;
 xcb_screen_t *screen;
+
 uint32_t values[3];
 
 
@@ -38,7 +40,7 @@ int mr_error_connection_check ( int connection_error )
 		                       break;    
 		 case XCB_CONN_CLOSED_INVALID_SCREEN: perror("ERROR:  Because the server does not have a screen matching the display");
 		                       break;               
-                 default: perror("ERROR: Unknnown error result when trying to contact the X Server");
+         default: perror("ERROR: Unknnown error result when trying to contact the X Server");
                                        break;
 		 }
   exit(1);
@@ -47,29 +49,39 @@ int mr_error_connection_check ( int connection_error )
 
 
 
+int mr_deploy_desktop_menu ( )
+ { 
+	 return 0;
+ }
+
+
 /* **************************************************** */
 /* Functions to deal with basic events in the main loop */
 /* **************************************************** */
-int mr_deal_with_button_press (xcb_generic_event_t *ev)
+int mr_deal_with_button_press (xcb_button_press_event_t *ev)
  {
-   xcb_button_press_event_t *e;
-   xcb_drawable_t win;
+
    xcb_get_geometry_reply_t *geom;
-      
-    e = ( xcb_button_press_event_t *) ev;
-    win = e->child;
+        
+    focuswin = ev->child;
+    
+    if ( (focuswin == 0) && (ev->detail == 3)) {
+		mr_deploy_desktop_menu();
+		return 0;
+	}
+	 
     values[0] = XCB_STACK_MODE_ABOVE;
-    xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_STACK_MODE, values);
-    geom = xcb_get_geometry_reply(dpy, xcb_get_geometry(dpy, win), NULL);
-    if (1 == e->detail) {
+    xcb_configure_window(xconn, focuswin, XCB_CONFIG_WINDOW_STACK_MODE, values);
+    geom = xcb_get_geometry_reply(xconn, xcb_get_geometry(xconn, focuswin), NULL);
+    if ( ev->detail == 1) {
        values[2] = 1;
-       xcb_warp_pointer(dpy, XCB_NONE, win, 0, 0, 0, 0, 1, 1);
+       xcb_warp_pointer(xconn, XCB_NONE, focuswin, 0, 0, 0, 0, 1, 1);
     }
     else {
        values[2] = 3;
-       xcb_warp_pointer(dpy, XCB_NONE, win, 0, 0, 0, 0, geom->width, geom->height);
+       xcb_warp_pointer(xconn, XCB_NONE, focuswin, 0, 0, 0, 0, geom->width, geom->height);
     }
-    xcb_grab_pointer(dpy, 0, root, XCB_EVENT_MASK_BUTTON_RELEASE
+    xcb_grab_pointer(xconn, 0, root, XCB_EVENT_MASK_BUTTON_RELEASE
                     | XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_POINTER_MOTION_HINT,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE, XCB_CURRENT_TIME);
  
@@ -78,30 +90,37 @@ int mr_deal_with_button_press (xcb_generic_event_t *ev)
 
 
 
-int mr_deal_with_motion_notify(xcb_generic_event_t *ev)
+int mr_deal_with_motion_notify()
  {
   xcb_query_pointer_reply_t *pointer;
-  xcb_drawable_t win;
   xcb_get_geometry_reply_t *geom;
   
-	pointer = xcb_query_pointer_reply(dpy, xcb_query_pointer(dpy, root), 0);
+
+    
+	pointer = xcb_query_pointer_reply(xconn, xcb_query_pointer(xconn, root), 0);
+	
+	        
     if (values[2] == 1) {/* move */
-       geom = xcb_get_geometry_reply(dpy, xcb_get_geometry(dpy, win), NULL);
+       geom = xcb_get_geometry_reply(xconn, xcb_get_geometry(xconn, focuswin), NULL);
        values[0] = (pointer->root_x + geom->width > screen->width_in_pixels)?
                    (screen->width_in_pixels - geom->width):pointer->root_x;
        values[1] = (pointer->root_y + geom->height > screen->height_in_pixels)?
                    (screen->height_in_pixels - geom->height):pointer->root_y;
-       xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
+       xcb_configure_window(xconn, focuswin, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
+       
 
      }
      else
        if (values[2] == 3) { /* resize */
-             geom = xcb_get_geometry_reply(dpy, xcb_get_geometry(dpy, win), NULL);
+             geom = xcb_get_geometry_reply(xconn, xcb_get_geometry(xconn, focuswin), NULL);
              values[0] = pointer->root_x - geom->x;
              values[1] = pointer->root_y - geom->y;
-             xcb_configure_window(dpy, win, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
+             xcb_configure_window(xconn, focuswin, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
         
-            }	 
+        }	 
+                            
+            
+            
   return 0;
  }
 
@@ -115,60 +134,63 @@ int main ()
    int scrno;
 
     /* Connects to the X Server  */
-    dpy = xcb_connect(NULL, &scrno);
-    mr_error_connection_check(xcb_connection_has_error(dpy));
+    xconn = xcb_connect(NULL, &scrno);
+    mr_error_connection_check(xcb_connection_has_error(xconn));
 
     /* Get the data of the first screen, the root screen */
-    screen = xcb_setup_roots_iterator(xcb_get_setup(dpy)).data;
+    screen = xcb_setup_roots_iterator(xcb_get_setup(xconn)).data;
     root = screen->root;
 
     /* *********************************************************** */
     /* It assings something on the keyboard to the root windows */
     /* XCB_MOD_MASK_2 is 16 .. but not clue what does it mean   */
-    xcb_grab_key(dpy, 1, root, XCB_MOD_MASK_2, XCB_NO_SYMBOL,
+    xcb_grab_key(xconn, 1, root, XCB_MOD_MASK_2, XCB_NO_SYMBOL,
                  XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     
-    xcb_grab_button(dpy, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+    xcb_grab_button(xconn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
                     | XCB_EVENT_MASK_BUTTON_RELEASE,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
                     1 /* left mouse button */,
-                    MOUSEMODKEY);
+                    XCB_MOD_MASK_1);
     
-    xcb_grab_button(dpy, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+    xcb_grab_button(xconn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
                     | XCB_EVENT_MASK_BUTTON_RELEASE,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
                     2 /* middle mouse button */,
-                    MOUSEMODKEY);
+                    XCB_MOD_MASK_1);
 
-    xcb_grab_button(dpy, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
+    xcb_grab_button(xconn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
                     | XCB_EVENT_MASK_BUTTON_RELEASE,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
                     3 /* right mouse button */,
-                    MOUSEMODKEY);            
+                    XCB_MOD_MASK_1);            
                 
                 
-    xcb_flush(dpy);
+    xcb_flush(xconn);
     /* *********************************************************** */
 
     /* Main loop */
-    while( (ev = xcb_wait_for_event(dpy)) ) {
+    while( (ev = xcb_wait_for_event(xconn)) ) {
     
       switch (ev->response_type & ~0x80) {
         
         case XCB_BUTTON_PRESS: 
-		  mr_deal_with_button_press(ev);
-		  xcb_flush(dpy);
+		  mr_deal_with_button_press(( xcb_button_press_event_t *)ev);
+		  xcb_flush(xconn);
           break;
 
         case XCB_MOTION_NOTIFY: 
-		  mr_deal_with_motion_notify(ev); 
-		  xcb_flush(dpy);   
+		  mr_deal_with_motion_notify(); 
+		  xcb_flush(xconn);   
           break;
 
         case XCB_BUTTON_RELEASE:
-          xcb_ungrab_pointer(dpy, XCB_CURRENT_TIME);
-          xcb_flush(dpy);
+          xcb_ungrab_pointer(xconn, XCB_CURRENT_TIME);
+          xcb_flush(xconn);
           break;
+          
+
+          
       } /* end switch */
     } /* end while */
 
