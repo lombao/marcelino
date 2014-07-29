@@ -1,12 +1,27 @@
 
 
-		
-marcelino:
-	gcc -o marcelino src/marcelino.c -lxcb
+SRC=marcelino.c
+
+CFLAGS+=-O2 -g -std=c99 -Wall -Wextra
+LDFLAGS+=-lxcb 	-lxcb-util 
+
+RM=/usr/bin/rm
+PREFIX=/usr/local
+
+CC=gcc
+
+TARGETS=marcelino	
+
+
+
+all: $(TARGETS)
+
+marcelino: $(OBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) src/marcelino.c
 	
-all:	marcelino
+
 
 clean:	
-	rm -fr *~
-	rm -fr src/*~
-	rm -f marcelino		
+	$(RM) -f $(TARGETS) *.o
+	$(RM) -f *~
+	$(RM) -f src/*~
