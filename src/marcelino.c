@@ -192,7 +192,8 @@ int main ()
 
           
       } /* end switch */
+      free(ev); /* free memory */
     } /* end while */
-
+  
   return 0;
  } 
