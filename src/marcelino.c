@@ -11,8 +11,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <xcb/xcb.h>
+#include <errno.h>
+#include <string.h>
 
+#include <xcb/xcb.h>
+#include <xcb/xproto.h>
+#include <xcb/xcb_util.h>
 
 /* *************    */
 /* Global variables */
@@ -68,7 +72,7 @@ int mr_deal_with_button_press (xcb_button_press_event_t *ev)
  {
 
    xcb_get_geometry_reply_t *geom;
-   const static uint32_t values[] = { XCB_STACK_MODE_ABOVE };
+   uint32_t values[] = { XCB_STACK_MODE_ABOVE };
         
     /* if left click then we change focus window      */  
     /* on the window that receive the click.. I guess */     
@@ -118,11 +122,23 @@ int mr_deal_with_button_press (xcb_button_press_event_t *ev)
 
 
 
+int mr_deal_with_map_request(xcb_map_request_event_t *mapreq) 
+{
+	/* We way yes, we "map" the bloody window */
+	xcb_map_window(xconn, mapreq->window);
+	
+    /* we request to show it now */
+	xcb_flush(xconn);
+	
+  return 0;
+}
+
+
 int mr_deal_with_motion_notify(xcb_motion_notify_event_t *motion)
  {
   xcb_query_pointer_reply_t *pointer;
   xcb_get_geometry_reply_t *geom;
-  uint32_t values[];
+  uint32_t values[2];
 
     /* it seems that although *motion event contains a mouse position */
     /* this seems not realiable as the mouse could have been on the move */
@@ -164,24 +180,18 @@ int main ()
 
    xcb_generic_event_t *ev;
    int scrno;
-
+   xcb_void_cookie_t cookie;
+   
     /* Connects to the X Server  */
     xconn = xcb_connect(NULL, &scrno);
     mr_error_connection_check(xcb_connection_has_error(xconn));
+    fprintf(stderr,">>>>The screen number allocated is %d\n",scrno);
 
     /* Get the data of the first screen, the root screen */
     screen = xcb_setup_roots_iterator(xcb_get_setup(xconn)).data;
     root = screen->root;
     
-    /* This code might be needed to actually subscribe the root window 
-     * into the events                                               */
-     uint32_t mask = XCB_CW_EVENT_MASK;  
-     uint32_t values[2];
-     values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY   | 
-                 XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-                 XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-     xcb_change_window_attributes_checked(xconn, root, mask, values);
-     xcb_flush(xconn);
+
      
     /* *********************************************************** */
     /* It assings something on the keyboard to the root window  */
@@ -207,47 +217,98 @@ int main ()
                     3 /* right mouse button */,
                     XCB_MOD_MASK_1);            
                 
-                
-    xcb_flush(xconn);
+
     /* *********************************************************** */
 
+    /* This code might be needed to actually subscribe the root window 
+     * into the events                                               */
+     uint32_t mask = XCB_CW_EVENT_MASK;  
+     uint32_t values[2];
+     values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY   | 
+                 XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
+                 XCB_EVENT_MASK_STRUCTURE_NOTIFY      |
+                 XCB_EVENT_MASK_BUTTON_PRESS          |
+                 XCB_EVENT_MASK_BUTTON_RELEASE;
+     cookie = xcb_change_window_attributes_checked(xconn, root, mask, values);
+     if ( xcb_request_check(xconn,cookie) != NULL) {
+      fprintf(stderr,"Seems there was a problem setting the attributes of the root window... bye bye\n");
+      exit(1);
+     }
+
+
     /* Main loop */
+    xcb_flush(xconn);
     while( (ev = xcb_wait_for_event(xconn)) ) {
     
-      switch (ev->response_type & ~0x80) {
+      switch (ev->response_type) {
         
         case XCB_BUTTON_PRESS: 
-		  mr_deal_with_button_press(( xcb_button_press_event_t *)ev);
-		  break;
+          fprintf(stderr,">>XCB_BUTTON_PRESS\n");
+          mr_deal_with_button_press(( xcb_button_press_event_t *)ev);
+	  break;
 		  
         case XCB_BUTTON_RELEASE:
+         fprintf(stderr,">>XCB_BUTTON_RELEASE\n");
           xcb_ungrab_pointer(xconn, XCB_CURRENT_TIME);
           break;
           
         case XCB_KEY_PRESS: 
-		  break;
+          fprintf(stderr,">>XCB_KEY_PRESS\n");
+	  break;
         
         case XCB_KEY_RELEASE: 
-		  break;
+         fprintf(stderr,">>XCB_KEY_RELEASE\n");
+	  break;
 		            
         case XCB_MOTION_NOTIFY: 
-		  mr_deal_with_motion_notify((xcb_motion_notify_event_t *) ev); 
-		  break;
+          fprintf(stderr,">>XCB_MOTION_NOTIFY\n");
+	  mr_deal_with_motion_notify((xcb_motion_notify_event_t *) ev); 
+	  break;
 
-        case XCB_ENTER_NOTIFY: 
-		  break;
+        case XCB_ENTER_NOTIFY:
+          fprintf(stderr,">>XCB_ENTER_NOTIFY\n"); 
+	  break;
 		  
-        case XCB_LEAVE_NOTIFY: 
-		  break;
+        case XCB_LEAVE_NOTIFY:
+          fprintf(stderr,">>XCB_LEAVE_NOTIFY\n"); 
+	  break;
 		           
         case XCB_EXPOSE:
+          fprintf(stderr,">>XCB_EXPOSE\n");
           break;
           
         case XCB_MAP_REQUEST:
+          /* It seem this event is called when a window is shown, or created */
+          fprintf(stderr,">>XCB_MAP_REQUEST\n");
+          mr_deal_with_map_request((xcb_map_request_event_t *)ev);
           break;
           
+        case XCB_CREATE_NOTIFY:
+          fprintf(stderr,">>XCB_CREATE_NOTIFY\n");
+          break;
+         
+        case XCB_DESTROY_NOTIFY:
+         fprintf(stderr,">>XCB_DESTROY_NOTIFY\n");
+         break;
+         
+        case XCB_CONFIGURE_REQUEST:
+         fprintf(stderr,">>XCB_CONFIGURE_REQUEST\n");
+         break;
+         
+        case XCB_CONFIGURE_NOTIFY:
+         fprintf(stderr,">>XCB_CONFIGURE_NOTIFY\n");
+         break;
+            
+        case XCB_MAPPING_NOTIFY:
+         fprintf(stderr,">>XCB_MAPPING_NOTIFY\n");
+         break;
+         
+        case XCB_CIRCULATE_REQUEST:
+         fprintf(stderr,">>XCB_CIRCULATE_REQUEST\n");
+         break;
+         
         default: 
-          fprintf(stderr, "Unknown event: %d\n", ev->response_type);
+          fprintf(stderr, ">> >>Unknown event: %d\n", ev->response_type);
           break; 
                    
       } /* end switch */
