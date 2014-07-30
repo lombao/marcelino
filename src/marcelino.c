@@ -18,10 +18,13 @@
 /* Global variables */
 xcb_connection_t *xconn;
 xcb_drawable_t root;
-xcb_drawable_t focuswin;
+xcb_drawable_t focuswin; /* the current window that has the focus */
 xcb_screen_t *screen;
+int mode = 0;             /* Internal mode, such as move or resize */
 
-uint32_t values[3];
+/* Global definitions */
+#define MODE_MOVE 2 /* We're currently moving a window with the mouse. */
+#define MODE_RESIZE 3 /* We're currently resizing a window with the mouse. */
 
 
 int mr_error_connection_check ( int connection_error )
@@ -51,6 +54,7 @@ int mr_error_connection_check ( int connection_error )
 
 int mr_deploy_desktop_menu ( )
  { 
+	 printf ("We have done click and and menu someday will appear\n");
 	 return 0;
  }
 
@@ -58,49 +62,77 @@ int mr_deploy_desktop_menu ( )
 /* **************************************************** */
 /* Functions to deal with basic events in the main loop */
 /* **************************************************** */
+
+
 int mr_deal_with_button_press (xcb_button_press_event_t *ev)
  {
 
    xcb_get_geometry_reply_t *geom;
+   const static uint32_t values[] = { XCB_STACK_MODE_ABOVE };
         
-    focuswin = ev->child;
+    /* if left click then we change focus window      */  
+    /* on the window that receive the click.. I guess */     
+      focuswin = ev->child;
     
-    if ( (focuswin == 0) && (ev->detail == 3)) {
+    
+    /* This should be that if we   click on the desktop then        */
+    /* we open the menu                                             */
+    if ( (focuswin == 0) ) {
 		mr_deploy_desktop_menu();
 		return 0;
 	}
-	 
-    values[0] = XCB_STACK_MODE_ABOVE;
+	
+	/* Ahhh, finally something easy to understand and documented!!         */
+	/* see doc http://xcb.freedesktop.org/windowcontextandmanipulation     */
+	/* Obviously if we click on a window we want this to become the one on the top */
+    
     xcb_configure_window(xconn, focuswin, XCB_CONFIG_WINDOW_STACK_MODE, values);
+    
+    /* We determine the geometry of the focused window to be used later
+     * in case we resize the window                                      */
     geom = xcb_get_geometry_reply(xconn, xcb_get_geometry(xconn, focuswin), NULL);
-    if ( ev->detail == 1) {
-       values[2] = 1;
+    
+    /* Now, this is copy pasted from other software, it seems that if the button 
+     * pressed is the left one, we take an action of move, and to do that
+     * for some reason we place the mouse pointer in the upper left, but there is 
+     * no opreation here of movement, just mouse positioning */
+    /* note that we setup a global variable mode indicating the status */
+    if ( ev->detail == 1) { /* moving window */
+       mode = MODE_MOVE;  
        xcb_warp_pointer(xconn, XCB_NONE, focuswin, 0, 0, 0, 0, 1, 1);
     }
-    else {
-       values[2] = 3;
+    else {                  /* resizing window */
+       mode = MODE_RESIZE;
        xcb_warp_pointer(xconn, XCB_NONE, focuswin, 0, 0, 0, 0, geom->width, geom->height);
     }
+ 
+    /* seems this used to propagate this event to other components or event handlers 
+     * but I am certainly not sure at all about this                                  */
     xcb_grab_pointer(xconn, 0, root, XCB_EVENT_MASK_BUTTON_RELEASE
                     | XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_POINTER_MOTION_HINT,
                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE, XCB_CURRENT_TIME);
  
+    xcb_flush(xconn);
   return 0;
  }
 
 
 
-int mr_deal_with_motion_notify()
+int mr_deal_with_motion_notify(xcb_motion_notify_event_t *motion)
  {
   xcb_query_pointer_reply_t *pointer;
   xcb_get_geometry_reply_t *geom;
-  
+  uint32_t values[];
 
+    /* it seems that although *motion event contains a mouse position */
+    /* this seems not realiable as the mouse could have been on the move */
+    /* since the event was triggered, that's why we ask for the current mouse */
+    /* position */
     
 	pointer = xcb_query_pointer_reply(xconn, xcb_query_pointer(xconn, root), 0);
 	
 	        
-    if (values[2] == 1) {/* move */
+    if (mode == MODE_MOVE) {/* we are moving windows, comes from the button press event */
        geom = xcb_get_geometry_reply(xconn, xcb_get_geometry(xconn, focuswin), NULL);
        values[0] = (pointer->root_x + geom->width > screen->width_in_pixels)?
                    (screen->width_in_pixels - geom->width):pointer->root_x;
@@ -108,10 +140,9 @@ int mr_deal_with_motion_notify()
                    (screen->height_in_pixels - geom->height):pointer->root_y;
        xcb_configure_window(xconn, focuswin, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
        
-
      }
      else
-       if (values[2] == 3) { /* resize */
+       if (mode == MODE_RESIZE) { /* we are resizing */
              geom = xcb_get_geometry_reply(xconn, xcb_get_geometry(xconn, focuswin), NULL);
              values[0] = pointer->root_x - geom->x;
              values[1] = pointer->root_y - geom->y;
@@ -119,10 +150,11 @@ int mr_deal_with_motion_notify()
         
         }	 
                             
-            
-            
+  xcb_flush(xconn);          
+  free(pointer); /* free some memory */        
   return 0;
  }
+
 
 /* **************************************************** */
 /* MAIN *********************************************** */
@@ -140,10 +172,20 @@ int main ()
     /* Get the data of the first screen, the root screen */
     screen = xcb_setup_roots_iterator(xcb_get_setup(xconn)).data;
     root = screen->root;
-
+    
+    /* This code might be needed to actually subscribe the root window 
+     * into the events                                               */
+     uint32_t mask = XCB_CW_EVENT_MASK;  
+     uint32_t values[2];
+     values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY   | 
+                 XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
+                 XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+     xcb_change_window_attributes_checked(xconn, root, mask, values);
+     xcb_flush(xconn);
+     
     /* *********************************************************** */
-    /* It assings something on the keyboard to the root windows */
-    /* XCB_MOD_MASK_2 is 16 .. but not clue what does it mean   */
+    /* It assings something on the keyboard to the root window  */
+    /* XCB_MOD_MASK_2 is 16 .. but not clue what that  means    */
     xcb_grab_key(xconn, 1, root, XCB_MOD_MASK_2, XCB_NO_SYMBOL,
                  XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     
@@ -176,24 +218,44 @@ int main ()
         
         case XCB_BUTTON_PRESS: 
 		  mr_deal_with_button_press(( xcb_button_press_event_t *)ev);
-		  xcb_flush(xconn);
-          break;
-
-        case XCB_MOTION_NOTIFY: 
-		  mr_deal_with_motion_notify(); 
-		  xcb_flush(xconn);   
-          break;
-
+		  break;
+		  
         case XCB_BUTTON_RELEASE:
           xcb_ungrab_pointer(xconn, XCB_CURRENT_TIME);
-          xcb_flush(xconn);
           break;
           
+        case XCB_KEY_PRESS: 
+		  break;
+        
+        case XCB_KEY_RELEASE: 
+		  break;
+		            
+        case XCB_MOTION_NOTIFY: 
+		  mr_deal_with_motion_notify((xcb_motion_notify_event_t *) ev); 
+		  break;
 
+        case XCB_ENTER_NOTIFY: 
+		  break;
+		  
+        case XCB_LEAVE_NOTIFY: 
+		  break;
+		           
+        case XCB_EXPOSE:
+          break;
           
+        case XCB_MAP_REQUEST:
+          break;
+          
+        default: 
+          fprintf(stderr, "Unknown event: %d\n", ev->response_type);
+          break; 
+                   
       } /* end switch */
+      
       free(ev); /* free memory */
     } /* end while */
+ 
   
+  xcb_disconnect(xconn); /* this line should never be executed anyway */
   return 0;
  } 
