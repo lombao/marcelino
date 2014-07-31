@@ -1,11 +1,18 @@
 marcelino
 =========
 
-Yet another tiny XCB Window Manager for Lombix in C language.
+Yet another tiny XCB Window Manager developed in C.
 
 Initially started from Tiny WM XCB Version, then I started to look into other Window Managers like
-MCWM , trying to understand the XCB protocol and how to implement a Window Manager.
+MCWM and follow its tracks trying to understand the XCB protocol and how to implement a Window Manager.
+After that I've started to gather all the info I could about XCB which it seems it is sort of a challenge.
 
+The aim of this new WM is to be used in my own Linux Distro ( Lombix ), so I can create a Desktop integrated 
+the way I want. Custom is my motto. Apart from this at this stage I cannot tell much more for the simple fact 
+I've not done it yet. 
+
+
+NOTE: Don't even try to compile it, it does not work yet and it is a very much In Progress work.
 
 References: http://incise.org/tinywm.html ( Tiny WM )
 	    https://github.com/rtyler/tinywm-ada/blob/master/tinywm-xcb.c ( Tiny WM XCB version )
