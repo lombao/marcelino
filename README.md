@@ -16,3 +16,4 @@ References: http://incise.org/tinywm.html ( Tiny WM )
     
 Documentation: http://xcb.freedesktop.org/manual/group__XCB____API.html ( XCB API )
                http://xcb.freedesktop.org/tutorial/events/
+               http://xcb.freedesktop.org/windowcontextandmanipulation/
