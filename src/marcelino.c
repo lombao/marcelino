@@ -2,7 +2,7 @@
 /* MARCELINO. Yet another simplistic WM using XCB in C */
 /* ----------------------------------------------------*/
 /* Author: Cesar Lombao
- * Date:   July 2014
+ * Date:   July 2014 
  * License: GPLv2
 */
 
@@ -15,6 +15,7 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
 
+#include "marcelino.h"
 
 
 /* **************************************************** */

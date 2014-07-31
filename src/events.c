@@ -216,6 +216,7 @@ int mr_deal_with_motion_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev)
   return 0;
  }
 
-
-
+void mr_deal_with_button_release (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+}
 

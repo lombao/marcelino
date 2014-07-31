@@ -11,14 +11,17 @@ PREFIX=/usr/local
 CC=gcc
 
 TARGETS=marcelino	
-
+OBJS=marcelino.o menu.o events.o
 
 
 all: $(TARGETS)
 
 marcelino: $(OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) src/marcelino.c
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) -o $@
 	
+marcelino.o: 	src/marcelino.c src/marcelino.h
+events.o: 		src/events.c 
+menu.o:			src/menu.c
 
 
 clean:	
