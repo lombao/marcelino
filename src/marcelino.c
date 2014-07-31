@@ -118,88 +118,9 @@ int main ()
 	  free(ev); /* free memory */
 	}
      
-    
-    
-    
-      switch (ev->response_type) {
-        
-         
-        
-        case XCB_BUTTON_PRESS: 
-          fprintf(stderr,">>XCB_BUTTON_PRESS\n");
-          mr_deal_with_button_press(( xcb_button_press_event_t *)ev);
-	  break;
-		  
-        case XCB_BUTTON_RELEASE:
-         fprintf(stderr,">>XCB_BUTTON_RELEASE\n");
-          xcb_ungrab_pointer(xconn, XCB_CURRENT_TIME);
-          break;
-          
-        case XCB_KEY_PRESS: 
-          fprintf(stderr,">>XCB_KEY_PRESS\n");
-	  break;
-        
-        case XCB_KEY_RELEASE: 
-         fprintf(stderr,">>XCB_KEY_RELEASE\n");
-	  break;
-		            
-        case XCB_MOTION_NOTIFY: 
-          fprintf(stderr,">>XCB_MOTION_NOTIFY\n");
-	  mr_deal_with_motion_notify((xcb_motion_notify_event_t *) ev); 
-	  break;
-
-        case XCB_ENTER_NOTIFY:
-          fprintf(stderr,">>XCB_ENTER_NOTIFY\n"); 
-	  break;
-		  
-        case XCB_LEAVE_NOTIFY:
-          fprintf(stderr,">>XCB_LEAVE_NOTIFY\n"); 
-	  break;
-		           
-        case XCB_EXPOSE:
-          fprintf(stderr,">>XCB_EXPOSE\n");
-          break;
-          
-        case XCB_MAP_REQUEST:
-          /* It seem this event is called when a window is shown, or created */
-          fprintf(stderr,">>XCB_MAP_REQUEST\n");
-          mr_deal_with_map_request((xcb_map_request_event_t *)ev);
-          break;
-          
-        case XCB_CREATE_NOTIFY:
-          fprintf(stderr,">>XCB_CREATE_NOTIFY\n");
-          break;
-         
-        case XCB_DESTROY_NOTIFY:
-         fprintf(stderr,">>XCB_DESTROY_NOTIFY\n");
-         break;
-         
-        case XCB_CONFIGURE_REQUEST:
-         fprintf(stderr,">>XCB_CONFIGURE_REQUEST\n");
-         break;
-         
-        case XCB_CONFIGURE_NOTIFY:
-         fprintf(stderr,">>XCB_CONFIGURE_NOTIFY\n");
-         break;
-            
-        case XCB_MAPPING_NOTIFY:
-         fprintf(stderr,">>XCB_MAPPING_NOTIFY\n");
-         break;
-         
-        case XCB_CIRCULATE_REQUEST:
-         fprintf(stderr,">>XCB_CIRCULATE_REQUEST\n");
-         break;
-         
-        default: 
-          fprintf(stderr, ">> >>Unknown event: %d\n", ev->response_type);
-          break; 
-                   
-      } /* end switch */
-      
-      free(ev); /* free memory */
-    } /* end while */
- 
-  
-  xcb_disconnect(xconn); /* this line should never be executed anyway */
+  /* This is not the way to get out, there is more stuff to do */
+  /* For the time being is enough, anyway this is not working yet so, who 
+   * cares how does it exit */  
+  xcb_disconnect(wmstatus.xconn); /* this line should never be executed anyway */
   return 0;
  } 

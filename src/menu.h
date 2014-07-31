@@ -11,20 +11,5 @@
 /*******************************************************/
 
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
 
-#include <xcb/xcb.h>
-#include <xcb/xproto.h>
-#include <xcb/xcb_util.h>
-
-#include "marcelino.h"
-#include "menu.h"
-
-int mr_desktop_menu_display ( )
- { 
-	 printf ("We have done click and and menu someday will appear\n");
-	 return 0;
- }
+int mr_desktop_menu_display ( );

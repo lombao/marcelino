@@ -10,24 +10,58 @@
 /* License: GPLv2                                      */
 /*******************************************************/
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+
+#include <xcb/xcb.h>
+#include <xcb/xproto.h>
+#include <xcb/xcb_util.h>
+
+#include "marcelino.h"
+#include "menu.h"
+
+
+/* Function declaration */
+void mr_deal_with_button_press (t_wmstatus * wmstatus,xcb_generic_event_t *ev);
+void mr_deal_with_map_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev);
+void mr_deal_with_map_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev);
+void mr_deal_with_motion_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev);
+void mr_deal_with_button_release (t_wmstatus * wmstatus,xcb_generic_event_t *ev);
+void mr_deal_with_key_press (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_key_release (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_enter_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_leave_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_expose (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_create_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_destroy_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_configure_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_configure_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_mapping_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+void mr_deal_with_circulate_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev); 
+
+
 
 /* the array of callbacks will be this big, 100 is an arbitrary 
  * number I've given it buecase at this stage I simply don't know */
-define HIGHER_XCB_EVENT_NUMBER 100;
+#define HIGHER_XCB_EVENT_NUMBER 100
 
 /* Array with the function pointers to the event callbacks */
-void (*array_callbacks[HIGHER_XCB_EVENT_NUMBER]);
+void (*array_callbacks[HIGHER_XCB_EVENT_NUMBER])(t_wmstatus * wmstatus,xcb_generic_event_t *ev);
+
+
 
 
 
 /**********************************************************************/
 /* Auxiliary function to be sure the callbacks array is initialized   */
 /**********************************************************************/
-void mr_aux_init_array_callbacks
+void mr_aux_init_array_callbacks ( )
  {
   int a;
   
-	  for(a=0:a<HIGHER_XCB_EVENT_NUMBER:a++) {
+	  for(a=0 ; a<HIGHER_XCB_EVENT_NUMBER ; a++) {
 		  array_callbacks[a]=NULL;
 	   }
 	   
@@ -63,7 +97,7 @@ void mr_events_execute_callback (t_wmstatus * wmstatus,xcb_generic_event_t *ev)
             ev->response_type > 0 && 
             ev->response_type < HIGHER_XCB_EVENT_NUMBER  ) {
 				 
-         *array_callbacks[ev->response_type](wmstatus,ev);
+         array_callbacks[ev->response_type](wmstatus,ev);
          
        }
       else
@@ -79,11 +113,11 @@ void mr_deal_with_button_press (t_wmstatus * wmstatus,xcb_generic_event_t *ev)
  {
 
    /* We cast generic event into this particular type of event */
-   xcb_button_press_event_t * event = ( xcb_button_press_event_t *)ev; 
+   xcb_button_press_event_t * button = ( xcb_button_press_event_t *)ev; 
                  
     /* This should be that if we  click on the desktop then      */
     /* we open the menu                                          */
-    if ( (event->child == 0) ) {
+    if ( (button->child == 0) ) {
 		mr_desktop_menu_display();
 	}
 	
@@ -91,7 +125,7 @@ void mr_deal_with_button_press (t_wmstatus * wmstatus,xcb_generic_event_t *ev)
 	/* see doc http://xcb.freedesktop.org/windowcontextandmanipulation     */
 	/* Obviously if we click on a window we want this to become the one on the top */
     uint32_t values[] = { XCB_STACK_MODE_ABOVE };
-    xcb_configure_window(wmstatus->xconn, event->child, XCB_CONFIG_WINDOW_STACK_MODE, values);
+    xcb_configure_window(wmstatus->xconn, button->child, XCB_CONFIG_WINDOW_STACK_MODE, values);
     
     
     /* Now, this is copy pasted from other software, it seems that if the button 
@@ -99,14 +133,14 @@ void mr_deal_with_button_press (t_wmstatus * wmstatus,xcb_generic_event_t *ev)
      * for some reason we place the mouse pointer in the upper left, but there is 
      * no opreation here of movement, just mouse positioning */
     /* note that we setup a global variable mode indicating the status */
-    if ( ev->detail == 1) { /* moving window */
+    if ( button->detail == 1) { /* moving window */
        wmstatus->mode = MODE_MOVE;  
-       xcb_warp_pointer(wmstatus->xconn, XCB_NONE, event->child  , 0, 0, 0, 0, 1, 1);
+       xcb_warp_pointer(wmstatus->xconn, XCB_NONE, button->child  , 0, 0, 0, 0, 1, 1);
     }
     else {                  /* resizing window */
-       xcb_get_geometry_reply_t *geom = xcb_get_geometry_reply(wmstatus->xconn, xcb_get_geometry(wmstatus->xconn,event->child ), NULL);
+       xcb_get_geometry_reply_t *g = xcb_get_geometry_reply(wmstatus->xconn, xcb_get_geometry(wmstatus->xconn,button->child ), NULL);
        wmstatus->mode = MODE_RESIZE;
-       xcb_warp_pointer(wmstatus->xconn, XCB_NONE, event->child , 0, 0, 0, 0, geom->width, geom->height);
+       xcb_warp_pointer(wmstatus->xconn, XCB_NONE, button->child , 0, 0, 0, 0, g->width, g->height);
     }
  
     /* seems this used to propagate this event to other components or event handlers 
@@ -138,7 +172,7 @@ void mr_deal_with_map_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev)
     xcb_colormap_t colormap; 
     xcb_generic_error_t *error;
     xcb_alloc_named_color_cookie_t colcookie;
-	colormap = screen->default_colormap;
+	colormap = wmstatus->screen->default_colormap;
     colcookie = xcb_alloc_named_color(wmstatus->xconn, colormap, strlen(colstr), colstr);
     col_reply = xcb_alloc_named_color_reply(wmstatus->xconn, colcookie, &error);
  
@@ -153,7 +187,7 @@ void mr_deal_with_map_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev)
     
     
 	/* We way yes, we "map" the bloody window */
-	xcb_map_window(wmstatus-xconn, mapreq->window);
+	xcb_map_window(wmstatus->xconn, mapreq->window);
 	
     /* we request to show it now */
 	xcb_flush(wmstatus->xconn);
@@ -164,59 +198,120 @@ void mr_deal_with_map_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev)
 /*******************************************************/
 /* When we move the mouse                              */
 /*******************************************************/
-int mr_deal_with_motion_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+void mr_deal_with_motion_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
  {
 
-  uint32_t values[2];
-
+    xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)ev;
+    
     /* it seems that although *motion event contains a mouse position */
     /* this seems not realiable as the mouse could have been on the move */
     /* since the event was triggered, that's why we ask for the current mouse */
     /* position */
     
-	xcb_query_pointer_reply_t *pointer = xcb_query_pointer_reply(
-	                           wmstatus->xconn, 
-	                           xcb_query_pointer(wmstatus->xconn, wmstatus->screen->root), 
-	                           0);
+	xcb_query_pointer_reply_t *p = xcb_query_pointer_reply(
+	                                             wmstatus->xconn, 
+	                                             xcb_query_pointer(wmstatus->xconn,
+	                                                               wmstatus->screen->root), 
+	                                             0);
 	
 	xcb_get_geometry_reply_t * g = xcb_get_geometry_reply(wmstatus->xconn, 
-	                                                      xcb_get_geometry(wmstatus->xconn, focuswin),
+	                                                      xcb_get_geometry(wmstatus->xconn, motion->child),
 	                                                      NULL);
+	                                                      
+	/* Note, I am assuming that motion->child is the window which is being moved or resized */    
+	/* this might be wrong */                                                  
+	uint32_t values[2];														
 	switch(wmstatus->mode) {
-		case MODE_MOVE:
-		                break;
+		case MODE_MOVE: 
+		     values[0] = (p->root_x + g->width > wmstatus->screen->width_in_pixels)?
+                         (wmstatus->screen->width_in_pixels - g->width):p->root_x;
+			 values[1] = (p->root_y + g->height > wmstatus->screen->height_in_pixels)?
+						 (wmstatus->screen->height_in_pixels - g->height):p->root_y;
+			 xcb_configure_window(wmstatus->xconn,
+				                  motion->child, 
+				                  XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, 
+				                  values);       
+		     break;
+		        
 		case MODE_RESIZE:
-		                break;
+             values[0] = p->root_x - g->x;
+             values[1] = p->root_y - g->y;
+             xcb_configure_window(wmstatus->xconn,
+                                 motion->child,
+                                 XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, 
+                                 values);
+		     break;
+		     
 		default: 
 		     fprintf(stderr,"INTERNAL ERROR on mr_deal_with_motion_notify. Value of MODE: %d\n",wmstatus->mode);
-		     exit(1); /* I gues we should quit more elegantly, to be reviewed */
+		     exit(1); /* I guess we should quit more elegantly, to be reviewed */
 		     break;
 	}
 	       
-    if (mode == MODE_MOVE) {/* we are moving windows, comes from the button press event */
-       geom = xcb_get_geometry_reply(xconn, xcb_get_geometry(xconn, focuswin), NULL);
-       values[0] = (pointer->root_x + geom->width > screen->width_in_pixels)?
-                   (screen->width_in_pixels - geom->width):pointer->root_x;
-       values[1] = (pointer->root_y + geom->height > screen->height_in_pixels)?
-                   (screen->height_in_pixels - geom->height):pointer->root_y;
-       xcb_configure_window(xconn, focuswin, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
-       
-     }
-     else
-       if (mode == MODE_RESIZE) { /* we are resizing */
-             geom = xcb_get_geometry_reply(xconn, xcb_get_geometry(xconn, focuswin), NULL);
-             values[0] = pointer->root_x - geom->x;
-             values[1] = pointer->root_y - geom->y;
-             xcb_configure_window(xconn, focuswin, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
-        
-        }	 
-                            
-  xcb_flush(xconn);          
-  free(pointer); /* free some memory */        
-  return 0;
+                           
+  xcb_flush(wmstatus->xconn);          
+  free(p); /* free some memory */        
+  
  }
 
 void mr_deal_with_button_release (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
 {
+  /* At this stage I don not know what else to do */
+  xcb_ungrab_pointer(wmstatus->xconn, XCB_CURRENT_TIME);
 }
 
+
+void mr_deal_with_key_press (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_key_release (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_enter_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_leave_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_expose (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_create_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_destroy_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_configure_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_configure_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_mapping_notify (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
+
+void mr_deal_with_circulate_request (t_wmstatus * wmstatus,xcb_generic_event_t *ev) 
+{
+  /* At this stage I don not know what else to do */
+}
