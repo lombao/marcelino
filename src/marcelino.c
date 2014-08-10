@@ -11,19 +11,17 @@
 #include <errno.h>
 #include <string.h>
 
-#include <xcb/xcb.h>
-#include <xcb/xproto.h>
-#include <xcb/xcb_util.h>
-
 #include "marcelino.h"
+#include "events.h"
 
+   t_wmstatus wmstatus;       /* The global status of the WM */
 
 /* **************************************************** */
 /* MAIN *********************************************** */
 /* **************************************************** */
 int main ()
  {
-   t_wmstatus wmstatus;       /* The global status of the WM */
+
    
 
    xcb_drawable_t    root; 
@@ -67,6 +65,9 @@ int main ()
     /* Get the data of the first screen, the root screen */
     wmstatus.screen = xcb_setup_roots_iterator(xcb_get_setup(wmstatus.xconn)).data;
     root = wmstatus.screen->root;
+     
+    /* about the keyboard, again no clue what I am doing */
+    /*xcb_key_symbols_t * keysyms = xcb_key_symbols_alloc(wmstatus.xconn);*/
      
     /* *********************************************************** */
     /* It assings something on the keyboard to the root window  */
@@ -112,9 +113,9 @@ int main ()
     /* Main loop */
     xcb_flush(wmstatus.xconn); /* We want all the settings to take effect before going into the loop */ 
     xcb_generic_event_t *ev;
-    mr_aux_init_array_callbacks(); /* Initializat the array of callbacks */
+    mr_events_init_array_callbacks(); /* Initializat the array of callbacks */
     while( (ev = xcb_wait_for_event(wmstatus.xconn)) ) { 
-	  mr_events_execute_callback(&wmstatus,ev);
+	  mr_events_execute_callback(ev);
 	  free(ev); /* free memory */
 	}
      
