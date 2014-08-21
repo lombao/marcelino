@@ -26,7 +26,7 @@ void (*array_callbacks[HIGHER_XCB_EVENT_NUMBER])(xcb_generic_event_t *ev);
 
 
 extern t_wmstatus wmstatus;
-
+extern xcb_atom_t wm_state;
 
 /**********************************************************************/
 /* Auxiliary function to be sure the callbacks array is initialized   */
@@ -79,11 +79,34 @@ void mr_events_execute_callback (xcb_generic_event_t *ev)
 	   }
 }
 
+
+void mr_deal_with_button_release (xcb_generic_event_t *ev) 
+{
+  xcb_button_release_event_t *button = (xcb_button_release_event_t *)ev;
+  fprintf(stderr,">> button release detail %d\n",button->detail);
+  switch (wmstatus.mode) {
+	  case MODE_MOVE:
+	     			 xcb_ungrab_pointer(wmstatus.xconn, XCB_CURRENT_TIME);
+	                 break;
+	  case MODE_RESIZE:
+	             	 xcb_ungrab_pointer(wmstatus.xconn, XCB_CURRENT_TIME);
+	                 break;
+	  default: /* do nothing */
+	           break;
+  }    
+  wmstatus.mode=0;
+  xcb_flush(wmstatus.xconn);
+}
+
+
+
 /*******************************************************/
 /* When we press a button mouse                        */
 /*******************************************************/
 void mr_deal_with_button_press (xcb_generic_event_t *ev)
  {
+	 xcb_query_pointer_reply_t *p;
+	    
    fprintf(stderr,"entrammos por el button press\n");
    /* We cast generic event into this particular type of event */
    xcb_button_press_event_t * button = ( xcb_button_press_event_t *)ev; 
@@ -100,25 +123,20 @@ void mr_deal_with_button_press (xcb_generic_event_t *ev)
 	/* Obviously if we click on a window we want this to become the one on the top */
     uint32_t values[] = { XCB_STACK_MODE_ABOVE };
     xcb_configure_window(wmstatus.xconn, button->child, XCB_CONFIG_WINDOW_STACK_MODE, values);
-    wmstatus.current_id = button->child;
-    
-    fprintf(stderr,">> dentro del button press button child %d\n",button->child);
-    fprintf(stderr,">> dentro del button press button detail %d\n",button->detail);
-    
-    /* Now, this is copy pasted from other software, it seems that if the button 
-     * pressed is the left one, we take an action of move, and to do that
-     * for some reason we place the mouse pointer in the upper left, but there is 
-     * no opreation here of movement, just mouse positioning */
-    /* note that we setup a global variable mode indicating the status */
+        
     if ( button->detail == 1) { /* moving window */
+    	p = xcb_query_pointer_reply(
+	                            wmstatus.xconn, 
+	                            xcb_query_pointer(wmstatus.xconn,
+	                            wmstatus.screen->root), 
+	                           0);
+       wmstatus.pointerx = p->root_x;
+       wmstatus.pointery = p->root_y;       
        wmstatus.mode = MODE_MOVE;  
-       xcb_warp_pointer(wmstatus.xconn, XCB_NONE, button->child  , 0, 0, 0, 0, 1, 1);
     }
     else {                  /* resizing window */
        fprintf(stderr,">>>> RESIZE CALL\n");
-       xcb_get_geometry_reply_t *g = xcb_get_geometry_reply(wmstatus.xconn, xcb_get_geometry(wmstatus.xconn,button->child ), NULL);
        wmstatus.mode = MODE_RESIZE;
-       xcb_warp_pointer(wmstatus.xconn, XCB_NONE, button->child , 0, 0, 0, 0, g->width, g->height);
     }
  
     /* seems this used to propagate this event to other components or event handlers 
@@ -153,31 +171,10 @@ void mr_deal_with_map_request (xcb_generic_event_t *ev)
 	/* allocate the map and from there extract the number associated with that color */
     /* there is no need to say that this is an abominable way of programming */
 	/* obviously once I understand how to it works this must be rewritten */
-    const char * colstr = "blue";
-	xcb_alloc_named_color_reply_t *col_reply;    
-    xcb_colormap_t colormap; 
-    xcb_generic_error_t *error;
-    xcb_alloc_named_color_cookie_t colcookie;
-    colormap = wmstatus.screen->default_colormap;
-    colcookie = xcb_alloc_named_color(wmstatus.xconn, colormap, strlen(colstr), colstr);
-    col_reply = xcb_alloc_named_color_reply(wmstatus.xconn, colcookie, &error);
-    
-    if (error !=  NULL ) {
-      fprintf(stderr,">> ERROR getting the color map\n");
-      
-    }
-     
+         
     uint32_t values[2];
     
-	/* Set border color. */   
-    values[0]=col_reply->pixel;	
-    xcb_change_window_attributes(wmstatus.xconn, mapreq->window, XCB_CW_BORDER_PIXEL, values);
-    
-	/* Set border width. */
-    values[0]=8;	
-    xcb_configure_window(wmstatus.xconn, mapreq->window, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
-    fprintf(stderr,">> dentro del map request mapreq window %d\n",mapreq->window);
-    
+	
     /* don't know what is this for .. I ve just copied over from mcwm */
     uint32_t mask = 0;
     mask = XCB_CW_EVENT_MASK;
@@ -187,14 +184,16 @@ void mr_deal_with_map_request (xcb_generic_event_t *ev)
     
     /* we register this window in our internal list */
     mr_window_add(mapreq->window);
-    
-      
+       
 	/* We way yes, we "map" the bloody window */
 	xcb_map_window(wmstatus.xconn, mapreq->window);
-	
-    /*long data[] = { XCB_ICCM_WM_STATE_NORMAL, XCB_NONE };
-    xcb_change_property(wmstatus.xconn,XCB_PROP_MODE_REPLACE,mapreq->window,wm_state,wm_state,32,2,data);
-    */
+
+/* these lines break the window manager */	
+/*     long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
+    xcb_change_property(wmstatus.xconn,XCB_PROP_MODE_REPLACE,
+                        mapreq->window,wm_state,wm_state,
+                        32,2,data);
+*/   
     	
     /* we request to show it now */
     xcb_flush(wmstatus.xconn);
@@ -207,6 +206,9 @@ void mr_deal_with_map_request (xcb_generic_event_t *ev)
 /*******************************************************/
 void mr_deal_with_motion_notify (xcb_generic_event_t *ev) 
  {
+	uint32_t newx,deltax;
+	uint32_t newy,deltay;
+	
     xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)ev;
     fprintf(stderr,"motion notify called %d\n",motion->child);
     
@@ -226,7 +228,11 @@ void mr_deal_with_motion_notify (xcb_generic_event_t *ev)
 	                                                                                        
 	switch(wmstatus.mode) {
 		case MODE_MOVE: 
-		     mr_window_set_position(id,p->root_x,p->root_y);      
+		     deltax = wmstatus.pointerx - p->root_x;
+		     deltay = wmstatus.pointery - p->root_y;
+		     newx = mr_window_get_pos_x(id)+deltax;
+		     newy = mr_window_get_pos_y(id)+deltay;
+		     mr_window_set_position(id,newx,newy);      
 		     break;
 		        
 		case MODE_RESIZE:         
@@ -244,28 +250,6 @@ void mr_deal_with_motion_notify (xcb_generic_event_t *ev)
   free(p); /* free some memory */        
   
  }
-
-void mr_deal_with_button_release (xcb_generic_event_t *ev) 
-{
-  /* At this stage I don not know what else to do */
-  xcb_button_release_event_t *button = (xcb_button_release_event_t *)ev;
-  fprintf(stderr,">> button release detail %d\n",button->detail);
-  switch (wmstatus.mode) {
-	  case MODE_MOVE:
-	                 xcb_warp_pointer(wmstatus.xconn, XCB_NONE, wmstatus.current_id, 0, 0, 0, 0, 1, 1);            	  
-					 xcb_ungrab_pointer(wmstatus.xconn, XCB_CURRENT_TIME);
-	                 break;
-	  case MODE_RESIZE:
-	                 xcb_warp_pointer(wmstatus.xconn, XCB_NONE, wmstatus.current_id, 0, 0, 0, 0, 1, 1);            
-                 	 xcb_ungrab_pointer(wmstatus.xconn, XCB_CURRENT_TIME);
-	                 break;
-	  default: /* do nothing */
-	           break;
-  }
-    
-  wmstatus.mode=0;
-  xcb_flush(wmstatus.xconn);
-}
 
 
 void mr_deal_with_key_press (xcb_generic_event_t *ev) 
@@ -312,14 +296,32 @@ void mr_deal_with_destroy_notify (xcb_generic_event_t *ev)
 {
   fprintf(stderr,">> entramos por destroy notify\n");
   xcb_destroy_notify_event_t *n = (xcb_destroy_notify_event_t *)ev;
-  mr_window_add(n->window);
+  mr_window_delete(n->window);
 }
 
 void mr_deal_with_configure_request (xcb_generic_event_t *ev) 
 {
-  /* At this stage I don not know what else to do */
-  fprintf(stderr,">> Entramos por el configure request %d\n",ev->response_type);
-}
+ uint32_t x = 0;
+ uint32_t y = 0;
+   
+  xcb_configure_request_event_t * e = (xcb_configure_request_event_t *) ev;
+  uint32_t  id=e->window;
+  
+   if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)  { x = e->width; }
+   if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) { y = e->height; }
+ 
+   if (x && y ) { mr_window_set_size(id,x,y); }
+   
+   if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE)
+     {
+       uint32_t values[1];         
+       values[0] = e->stack_mode;
+       xcb_configure_window(wmstatus.xconn, id,
+                                 XCB_CONFIG_WINDOW_STACK_MODE,
+                                 values);
+      }           
+    xcb_flush(wmstatus.xconn);   
+ }
 
 void mr_deal_with_configure_notify (xcb_generic_event_t *ev) 
 {
@@ -337,6 +339,8 @@ void mr_deal_with_circulate_request (xcb_generic_event_t *ev)
 {
   /* At this stage I don not know what else to do */
   fprintf(stderr,">> Entramos por el circulate request %d\n",ev->response_type);
+  xcb_circulate_request_event_t *e = (xcb_circulate_request_event_t *)ev;
+  xcb_circulate_window(wmstatus.xconn, e->window, e->place);
 }
 
 

@@ -15,6 +15,34 @@
 #include "events.h"
 
    t_wmstatus wmstatus;       /* The global status of the WM */
+   xcb_atom_t wm_state;
+
+
+xcb_atom_t getatom(char *atom_name);
+
+
+xcb_atom_t getatom(char *atom_name)
+{
+    xcb_intern_atom_cookie_t atom_cookie;
+    xcb_atom_t atom;
+    xcb_intern_atom_reply_t *rep;
+    
+    atom_cookie = xcb_intern_atom(wmstatus.xconn, 0, strlen(atom_name), atom_name);
+    rep = xcb_intern_atom_reply(wmstatus.xconn, atom_cookie, NULL);
+    if (NULL != rep)
+    {
+        atom = rep->atom;
+        free(rep);
+        return atom;
+    }
+
+    /*
+     * XXX Note that we return 0 as an atom if anything goes wrong.
+     * Might become interesting.
+     */
+    return 0;
+}
+
 
 /* **************************************************** */
 /* MAIN *********************************************** */
@@ -109,6 +137,21 @@ int main ()
       exit(1);
      }
 
+    /*****************************/
+    const char * colstr = "blue";
+	xcb_alloc_named_color_reply_t * col_reply;    
+    xcb_colormap_t colormap; 
+    xcb_generic_error_t *error;
+    xcb_alloc_named_color_cookie_t colcookie;
+    colormap = wmstatus.screen->default_colormap;
+    colcookie = xcb_alloc_named_color(wmstatus.xconn, colormap, strlen(colstr), colstr);
+    col_reply = xcb_alloc_named_color_reply(wmstatus.xconn, colcookie, &error);
+    wmstatus.pixel = col_reply->pixel;
+    free(col_reply);
+    
+    /**********************/
+    wm_state = getatom("WM_STATE");
+    
     /*************/
     /* Main loop */
     xcb_flush(wmstatus.xconn); /* We want all the settings to take effect before going into the loop */ 

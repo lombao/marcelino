@@ -20,14 +20,17 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_keysyms.h>
 
+
 /* ********************** */
 /* The WM Current status  */
 typedef struct 
 {
   xcb_connection_t *xconn;  /* the XCB Connection */
-  xcb_screen_t     *screen; /* The screen info    */
-  xcb_drawable_t   current_id; /* window we are dealing with right now */     
+  xcb_screen_t     *screen; /* The screen info    */  
   int              mode;    /* Flag to say if we are moving or resizing */	
+  uint32_t pixel;
+  uint32_t pointerx;
+  uint32_t pointery;
 } t_wmstatus;
 
 
