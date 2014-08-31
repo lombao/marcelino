@@ -11,9 +11,11 @@
 /*******************************************************/
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
@@ -24,27 +26,16 @@
 
 
 /* Function declaration */
-void mr_events_init_array_callbacks();
+
 void mr_events_execute_callback (xcb_generic_event_t *ev);
 void mr_deal_with_button_press (xcb_generic_event_t *ev);
 void mr_deal_with_map_request (xcb_generic_event_t *ev);
 void mr_deal_with_motion_notify (xcb_generic_event_t *ev);
 void mr_deal_with_button_release (xcb_generic_event_t *ev);
-void mr_deal_with_key_press (xcb_generic_event_t *ev); 
-void mr_deal_with_key_release (xcb_generic_event_t *ev); 
-void mr_deal_with_enter_notify (xcb_generic_event_t *ev); 
-void mr_deal_with_leave_notify (xcb_generic_event_t *ev); 
-void mr_deal_with_expose (xcb_generic_event_t *ev); 
-void mr_deal_with_destroy_notify (xcb_generic_event_t *ev); 
-void mr_deal_with_configure_request (xcb_generic_event_t *ev); 
-void mr_deal_with_configure_notify (xcb_generic_event_t *ev); 
-void mr_deal_with_mapping_notify (xcb_generic_event_t *ev); 
-void mr_deal_with_circulate_request (xcb_generic_event_t *ev); 
+void mr_deal_with_destroy_notify (xcb_generic_event_t *ev);
 
 
 
-/* the array of callbacks will be this big, 100 is an arbitrary 
- * number I've given it buecase at this stage I simply don't know */
-#define HIGHER_XCB_EVENT_NUMBER 100
-
-
+/* Global definitions */
+#define MODE_MOVE 2   /* We're currently moving a window with the mouse.   */
+#define MODE_RESIZE 3 /* We're currently resizing a window with the mouse. */

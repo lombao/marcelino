@@ -6,29 +6,37 @@
  * License: GPLv2
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
+
 
 #include "marcelino.h"
 #include "events.h"
 
-   t_wmstatus wmstatus;       /* The global status of the WM */
-   xcb_atom_t wm_state;
 
+  xcb_connection_t  *xconn;  /* the XCB Connection */
+  xcb_screen_t      *xscreen; /* The screen info    */  	
 
-xcb_atom_t getatom(char *atom_name);
+  uint32_t pixelcolor;
+ 
+ 
+xcb_atom_t atom_desktop;        
+xcb_atom_t wm_delete_window;    /* WM_DELETE_WINDOW event to close windows.  */
+xcb_atom_t wm_change_state;
+xcb_atom_t wm_state;
+xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 
+  
 
+/***************************************
+ * Get a defined atom from the X server.
+ *****************************************/ 
 xcb_atom_t getatom(char *atom_name)
 {
     xcb_intern_atom_cookie_t atom_cookie;
     xcb_atom_t atom;
     xcb_intern_atom_reply_t *rep;
     
-    atom_cookie = xcb_intern_atom(wmstatus.xconn, 0, strlen(atom_name), atom_name);
-    rep = xcb_intern_atom_reply(wmstatus.xconn, atom_cookie, NULL);
+    atom_cookie = xcb_intern_atom(xconn, 0, strlen(atom_name), atom_name);
+    rep = xcb_intern_atom_reply(xconn, atom_cookie, NULL);
     if (NULL != rep)
     {
         atom = rep->atom;
@@ -41,123 +49,80 @@ xcb_atom_t getatom(char *atom_name)
      * Might become interesting.
      */
     return 0;
-}
-
-
+} 
+ 
+  
 /* **************************************************** */
 /* MAIN *********************************************** */
 /* **************************************************** */
 int main ()
  {
-
-   
-
-   xcb_drawable_t    root; 
-   
+    
     /* Connects to the X Server  */
-    wmstatus.xconn = xcb_connect(NULL, NULL);
-    switch (xcb_connection_has_error(wmstatus.xconn)) {
-		 case 0: /* everything is fine so we don't do anything*/
-		       break;
-		       
-		 case XCB_CONN_ERROR: 
-		       fprintf(stderr,"ERROR: socket errors, pipe errors or other stream errors");
-		       exit(1);
-		       break;
-		 case XCB_CONN_CLOSED_EXT_NOTSUPPORTED: 
-		       fprintf(stderr,"ERROR: Extension not supported");
-		       exit(1);
-		       break;
-		 case XCB_CONN_CLOSED_MEM_INSUFFICIENT: 
-		       fprintf(stderr,"ERROR: Insufficient Memory");
-		       exit(1);
-		       break;
-		 case XCB_CONN_CLOSED_REQ_LEN_EXCEED:
-		       fprintf(stderr,"ERROR: Exceeding request length that server accepts");
-		       exit(1);
-		       break;           
-		 case XCB_CONN_CLOSED_PARSE_ERR: 
-		       fprintf(stderr,"ERROR: During parsing display string");
-		       exit(1);
-		       break;    
-		 case XCB_CONN_CLOSED_INVALID_SCREEN: 
-		       fprintf(stderr,"ERROR:  Because the server does not have a screen matching the display");
-		       exit(1);
-		       break;               
-         default:
-               fprintf(stderr,"ERROR: Unknnown error result when trying to contact the X Server");
-               exit(1);
-               break;
+    xconn = xcb_connect(NULL, NULL);
+    
+    if  ( xcb_connection_has_error(xconn)) {
+      fprintf(stderr,"Cannot connect to the X Server. Abort..\n");
 	}
 
     /* Get the data of the first screen, the root screen */
-    wmstatus.screen = xcb_setup_roots_iterator(xcb_get_setup(wmstatus.xconn)).data;
-    root = wmstatus.screen->root;
-     
-    /* about the keyboard, again no clue what I am doing */
-    /*xcb_key_symbols_t * keysyms = xcb_key_symbols_alloc(wmstatus.xconn);*/
-     
-    /* *********************************************************** */
-    /* It assings something on the keyboard to the root window  */
-    /* XCB_MOD_MASK_2 is 16 .. but not clue what that  means    */
-    xcb_grab_key(wmstatus.xconn, 1, root, XCB_MOD_MASK_2, XCB_NO_SYMBOL,
-                 XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    
-    xcb_grab_button(wmstatus.xconn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
-                    | XCB_EVENT_MASK_BUTTON_RELEASE,
-                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    1 /* left mouse button */,
-                    XCB_MOD_MASK_1);
-    
-    xcb_grab_button(wmstatus.xconn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
-                    | XCB_EVENT_MASK_BUTTON_RELEASE,
-                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    2 /* middle mouse button */,
-                    XCB_MOD_MASK_1);
+    xscreen = xcb_setup_roots_iterator(xcb_get_setup(xconn)).data;
+    fprintf(stderr,"The root window is number %ld\n",(long)xscreen->root);
 
-    xcb_grab_button(wmstatus.xconn, 0, root, XCB_EVENT_MASK_BUTTON_PRESS
-                    | XCB_EVENT_MASK_BUTTON_RELEASE,
-                    XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, root, XCB_NONE,
-                    3 /* right mouse button */,
-                    XCB_MOD_MASK_1);            
-                
-
-    /* *********************************************************** */
-    /* Tho subscribe the WM to the events we want to listen        */
-     uint32_t mask = XCB_CW_EVENT_MASK;  
-     uint32_t values[2];
-     values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY   | 
-                 XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
-                 XCB_EVENT_MASK_STRUCTURE_NOTIFY      |
-                 XCB_EVENT_MASK_BUTTON_PRESS          |
-                 XCB_EVENT_MASK_BUTTON_RELEASE;
-     xcb_void_cookie_t cookie = xcb_change_window_attributes_checked(wmstatus.xconn, root, mask, values);
-     if ( xcb_request_check(wmstatus.xconn,cookie) != NULL) {
-      fprintf(stderr,"Seems there was a problem setting the attributes of the root window... bye bye\n");
-      exit(1);
-     }
-
-    /*****************************/
+    /************************************************/
     const char * colstr = "blue";
 	xcb_alloc_named_color_reply_t * col_reply;    
     xcb_colormap_t colormap; 
     xcb_generic_error_t *error;
     xcb_alloc_named_color_cookie_t colcookie;
-    colormap = wmstatus.screen->default_colormap;
-    colcookie = xcb_alloc_named_color(wmstatus.xconn, colormap, strlen(colstr), colstr);
-    col_reply = xcb_alloc_named_color_reply(wmstatus.xconn, colcookie, &error);
-    wmstatus.pixel = col_reply->pixel;
+    colormap = xscreen->default_colormap;
+    colcookie = xcb_alloc_named_color(xconn, colormap, strlen(colstr), colstr);
+    col_reply = xcb_alloc_named_color_reply(xconn, colcookie, &error);
+    pixelcolor = col_reply->pixel;
     free(col_reply);
-    
-    /**********************/
+    /**************************************************/
+ 
+                                        
+    atom_desktop = getatom("_NET_WM_DESKTOP");
+    wm_delete_window = getatom("WM_DELETE_WINDOW");
+    wm_change_state = getatom("WM_CHANGE_STATE");
     wm_state = getatom("WM_STATE");
+    wm_protocols = getatom("WM_PROTOCOLS");
+    
+
+   
+
+
+    /* *********************************************************** */
+    /* Tho subscribe the WM to the events we want to listen        */
+    const uint32_t  mask   = XCB_CW_EVENT_MASK;
+    const uint32_t  values =  XCB_EVENT_MASK_STRUCTURE_NOTIFY |	XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
+                              XCB_EVENT_MASK_BUTTON_PRESS     | XCB_EVENT_MASK_BUTTON_RELEASE;
+	
+    xcb_void_cookie_t cookie =
+        xcb_change_window_attributes_checked(xconn, xscreen->root, mask, &values);
+    xcb_generic_error_t * xerror = xcb_request_check(xconn, cookie);
+    
+    xcb_flush(xconn); /* We want all the settings to take effect before going into the loop */
+    
+    if (NULL != xerror)
+    {
+        fprintf(stderr, "Can't get SUBSTRUCTURE REDIRECT. "
+                "Error code: %d\n"
+                "Another window manager running? Exiting.\n",
+                error->error_code);
+
+        xcb_disconnect(xconn);
+        
+        exit(1);
+    }
+    
     
     /*************/
     /* Main loop */
-    xcb_flush(wmstatus.xconn); /* We want all the settings to take effect before going into the loop */ 
+     
     xcb_generic_event_t *ev;
-    mr_events_init_array_callbacks(); /* Initializat the array of callbacks */
-    while( (ev = xcb_wait_for_event(wmstatus.xconn)) ) { 
+    while( (ev = xcb_wait_for_event(xconn)) ) { 
 	  mr_events_execute_callback(ev);
 	  free(ev); /* free memory */
 	}
@@ -165,6 +130,6 @@ int main ()
   /* This is not the way to get out, there is more stuff to do */
   /* For the time being is enough, anyway this is not working yet so, who 
    * cares how does it exit */  
-  xcb_disconnect(wmstatus.xconn); /* this line should never be executed anyway */
+  xcb_disconnect(xconn); /* this line should never be executed anyway */
   return 0;
  } 

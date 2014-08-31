@@ -25,42 +25,44 @@
 #include <string.h>
 
 
-typedef struct {
-	int16_t x;             /* X coordinate. */
-    int16_t y;             /* Y coordinate. */
-} t_wm_pos;
-
-
 
 /* type for the windows node */
-typedef struct {
-    xcb_drawable_t id; 
-    xcb_get_geometry_reply_t size;
-    t_wm_pos  pos;
-    xcb_size_hints_t hints;
-    bool hintsflag;
-    int flag_max;          /* flag to indicate if it is maxi'ed */
-} t_wmwindow;
-
 typedef struct s_wmnode {
-	t_wmwindow window;
-	struct s_wmnode * before;
-	struct s_wmnode * next;	
+    xcb_drawable_t id; 
+    uint32_t posx;
+    uint32_t posy;
+    uint32_t width;
+    uint32_t height;
+    struct s_wmnode * next;
+    struct s_wmnode * before;
 } t_wmnode;
 
 
 
+ 
+
+  extern xcb_connection_t  *xconn;  /* the XCB Connection */
+  extern xcb_screen_t      *xscreen; /* The screen info    */  
+
+  extern uint32_t	plastx;
+  extern uint32_t	plasty; 
+  extern uint32_t   pixelcolor;
+  
+extern xcb_atom_t atom_desktop;        
+extern xcb_atom_t wm_delete_window;    /* WM_DELETE_WINDOW event to close windows.  */
+extern xcb_atom_t wm_change_state;
+extern xcb_atom_t wm_state;
+extern xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 
 /* ********************************* */
 /*  Function declarations            */
 t_wmnode * mr_window_locate(xcb_drawable_t id); 
-void mr_window_delete (xcb_drawable_t id);
 void mr_window_add (xcb_drawable_t id);
-void mr_window_set_max(xcb_drawable_t id);
-xcb_get_geometry_reply_t *  mr_window_get_size(xcb_drawable_t id);
-void mr_window_set_size(xcb_drawable_t id,uint32_t x, uint32_t y);
-void mr_window_set_position(xcb_drawable_t id,uint32_t x, uint32_t y);
-uint32_t mr_window_get_pos_x(xcb_drawable_t id);
-uint32_t mr_window_get_pos_y(xcb_drawable_t id);
+void mr_window_delete (xcb_drawable_t id);
+void mr_window_set_size(xcb_drawable_t id,uint32_t   x, uint32_t   y);
+void mr_window_get_size(xcb_drawable_t id,uint32_t * x, uint32_t * y);
+void mr_window_set_pos(xcb_drawable_t id,uint32_t   x,uint32_t   y);
+void mr_window_get_pos(xcb_drawable_t id,uint32_t * x,uint32_t * y);
+
 
 

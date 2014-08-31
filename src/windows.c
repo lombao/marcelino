@@ -10,95 +10,80 @@
 /* License: GPLv2                                      */
 /*******************************************************/
 
-
-#include "marcelino.h"
 #include "windows.h"
 #include "aux.h"
 
 
-extern t_wmstatus wmstatus;
-
 /* Global variables */
-t_wmnode * head_w_list = NULL;
-t_wmnode * tail_w_list = NULL;
-
+t_wmnode * whead = NULL;
+t_wmnode * wtail = NULL;
 
 /* This is like a create or init or new in OOP */
 /* but if a window id is already registered it will not create
  * another entry */
 void mr_window_add (xcb_drawable_t id) {
   
+    fprintf(stderr,"METIENDO VENTANA %d\n",id);
+    
     t_wmnode * ptr = mr_window_locate(id);
-    if (ptr != NULL) { fprintf(stderr,"tried to add a window that alerady existed\n");
+    if (ptr != NULL) { fprintf(stderr,"tried to add a window that already existed\n");
 		               return; }
   
     ptr=mr_aux_malloc(sizeof (t_wmnode));	    
-    ptr->window.id = id;
-    ptr->window.hintsflag = false;
-    
+    ptr->id = id;
     ptr->before = NULL;
     ptr->next   = NULL;
-    if (head_w_list == NULL) {
-	 head_w_list = ptr;
-	 tail_w_list = ptr;
+    
+    if (whead == NULL) {
+	 whead = ptr;
+	 wtail = ptr;
 	}
 	else {
-	 tail_w_list->next = ptr;
-	 ptr->before = tail_w_list;
-	 tail_w_list = ptr;	
+	 wtail->next = ptr;
+	 ptr->before = wtail;
+	 wtail = ptr;	
 	}
     
-    fprintf(stderr,"hemos alocado memoria para el registro de la ventana nueva\n");
-      
-    /* take hints */
-    if (xcb_icccm_get_wm_normal_hints_reply(
-            wmstatus.xconn, xcb_icccm_get_wm_normal_hints_unchecked(
-                wmstatus.xconn, id), &ptr->window.hints, NULL))
-    {
-      ptr->window.hintsflag = true;
-      fprintf(stderr,"el hintsflag es cierto\n");
-    }
-    
+     
     /* Set border color and width border */   
     uint32_t values[2];
-    values[0]=wmstatus.pixel;	
-    xcb_change_window_attributes(wmstatus.xconn, id, XCB_CW_BORDER_PIXEL, values);
-	values[0]=8;	
-    xcb_configure_window(wmstatus.xconn, id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
+    values[0]=pixelcolor;	
+    xcb_change_window_attributes(xconn, id, XCB_CW_BORDER_PIXEL, values);
+	values[0]=10;	
+    xcb_configure_window(xconn, id, XCB_CONFIG_WINDOW_BORDER_WIDTH, values);
     
+    /* We way yes, we "map" the bloody window */
+	xcb_map_window(xconn, id);
+	
+    /* Declare window normal. */
+    long data[] = { XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE };
+    xcb_change_property(xconn, XCB_PROP_MODE_REPLACE, id,
+                              wm_state, wm_state, 32, 2, data);
     
-    /* take geometry */
-    xcb_get_geometry_reply_t * g =
-                        xcb_get_geometry_reply(wmstatus.xconn, 
-                                               xcb_get_geometry(wmstatus.xconn, id),
-                                               NULL);
-    
-    
-    fprintf(stderr,"la geometria a palo seco es %d x %d\n",g->width,g->height);                                        
-    if (ptr->window.hintsflag && (ptr->window.hints.flags & XCB_ICCCM_SIZE_HINT_P_MAX_SIZE))
-     {
-      g->width =(g->width > ptr->window.hints.max_width)?ptr->window.hints.max_width:g->width;
-      g->height=(g->height > ptr->window.hints.max_height)?ptr->window.hints.max_height:g->height;
-     }
-    if (ptr->window.hintsflag && (ptr->window.hints.flags & XCB_ICCCM_SIZE_HINT_P_MIN_SIZE))
-     {
-	  g->width =(g->width < ptr->window.hints.min_width)?ptr->window.hints.min_width:g->width;
-      g->height=(g->height < ptr->window.hints.min_height)?ptr->window.hints.min_height:g->height;
-     }
-    /* 
-    g->width = 600; 
-    g->height = 600; 
-    */ 
-    mr_window_set_size(id,g->width,g->height);
-    mr_window_set_position(id,g->x,g->y);
-    free(g);
-    
+    /* retrieve its position and size */               
+    /* We have to decompose this request to benefit from XCB async */  
+      xcb_get_geometry_reply_t * g =
+                        xcb_get_geometry_reply(xconn, 
+                                  xcb_get_geometry(xconn, id),
+                                  NULL);                
+     ptr->posx=g->x;
+     ptr->posy=g->y;
+     ptr->width=g->width;   
+     ptr->height=g->height;
+           
+           
+    /* stack above */                          
+    values[0] =  XCB_STACK_MODE_ABOVE ;
+    xcb_configure_window(xconn, id, XCB_CONFIG_WINDOW_STACK_MODE, values);                          
 
+    /*
+     * Move cursor into the middle of the window so we don't lose the
+     * pointer to another window.
+     */
+    xcb_warp_pointer(xconn, XCB_NONE, id, 0, 0, 0, 0, 100, 100);
+     
 }
     
-
- 
-
 void mr_window_delete (xcb_drawable_t id) {
  
 	t_wmnode * ptr = mr_window_locate(id);
@@ -109,16 +94,16 @@ void mr_window_delete (xcb_drawable_t id) {
 	  }
 	  else {
 	    if (ptr->before == NULL && ptr->next == NULL) {
-			 head_w_list = NULL;
-	         tail_w_list = NULL;
-	     }
+			 whead = NULL;
+	         wtail = NULL;
+	     } 
 	    else {
 			if (ptr->before == NULL) {
-			 head_w_list = ptr->next;
+			 whead = ptr->next;
 			 ptr->next->before = NULL;
 			}
 			else {
-			 tail_w_list = ptr->before;
+			 wtail = ptr->before;
 			 ptr->before->next = NULL;
 			}
 		} /* else */
@@ -129,71 +114,62 @@ void mr_window_delete (xcb_drawable_t id) {
 		
 }
 
-
-
 /*******************************************************/
-/* DEALING WITH SIZE */
-xcb_get_geometry_reply_t *  mr_window_get_size(xcb_drawable_t id) {
-	
-  t_wmnode * ptr = mr_window_locate(id);
-  if (ptr == NULL) { return NULL; } 
-  return (&ptr->window.size);
-}	
-
+/*******************************************************/
+/*******************************************************/
 void mr_window_set_size(xcb_drawable_t id,uint32_t x, uint32_t y) {
 uint32_t values[2];	           
     
   t_wmnode * ptr = mr_window_locate(id);
-  if (ptr == NULL) { fprintf (stderr,"no existe esa ventana\n"); return; }
+  if (ptr == NULL) { return; }
   
-  ptr->window.size.width = x;
-  ptr->window.size.height = y;
-
   fprintf(stderr,"****** Setting size %d x %d\n",x,y);  
-  values[0] = x; values[1] = y;
-  xcb_configure_window(wmstatus.xconn,
+    
+  values[0] = ptr->width  = x;
+  values[1] = ptr->height = y;
+
+   xcb_configure_window(xconn,
                        id,
                        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, 
                        values);
 
 } 
-
-
+ 
+void mr_window_get_size(xcb_drawable_t id,uint32_t * x, uint32_t * y) {
+          
+  t_wmnode * ptr = mr_window_locate(id);
+  if (ptr == NULL) { return; }
+  *x=ptr->width;
+  *y=ptr->height;
+} 
 
 /*******************************************************/
-
-void mr_window_set_position(xcb_drawable_t id,uint32_t x, uint32_t y) {
+/*******************************************************/
+/*******************************************************/
+void mr_window_set_pos(xcb_drawable_t id,uint32_t x, uint32_t y) {
 uint32_t values[2];
 
   t_wmnode * ptr = mr_window_locate(id);
   if (ptr == NULL) { return; }
-
-  ptr->window.size.x = x;
-  ptr->window.size.y = y;
   
-  values[0]=x; values[1]=y;	
-  xcb_configure_window(wmstatus.xconn,
+  fprintf(stderr,"**** Moving window %d to position %d %d \n",id,x,y);
+
+  values[0] = ptr->posx = x;
+  values[1] = ptr->posy = y;
+  
+  xcb_configure_window(xconn,
 	                  id, 
 	                  XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, 
-	                  values); 
-	                  
-  xcb_flush(wmstatus.xconn);
+	                  values); 	                  
 }
 
 
-
-uint32_t mr_window_get_pos_x(xcb_drawable_t id) {
+void mr_window_get_pos(xcb_drawable_t id,uint32_t * x,uint32_t * y) {
+	
   t_wmnode * ptr = mr_window_locate(id);
-  if (ptr == NULL) { return 0; }
-  return ptr->window.size.x;
-  
-}
-
-uint32_t mr_window_get_pos_y(xcb_drawable_t id) {
-  t_wmnode * ptr = mr_window_locate(id);
-  if (ptr == NULL) { return 0; }
-  return ptr->window.size.y;
-  
+  if (ptr == NULL) { return;  }
+  *x=ptr->posx;
+  *y=ptr->posy;
 }
 
 
@@ -201,13 +177,14 @@ uint32_t mr_window_get_pos_y(xcb_drawable_t id) {
 /***************************************************************/
 /* loop over the list sequentualy trying to find the window id */
 t_wmnode * mr_window_locate(xcb_drawable_t id) {
-   t_wmnode * ptr = head_w_list;
+	
+   t_wmnode * ptr = whead;
    
    while ( ptr != NULL ) {
-	 if (ptr->window.id == id ) { return ptr; }
+	 if (ptr->id == id ) { return ptr; }
 	 ptr = ptr->next;   
    }	
-  fprintf(stderr,"en el mr_window_locate nos han pedido un id que  no existe\n"); 
+  fprintf(stderr,"mr_window_locate.. id %ld  does not exist\n",(long)id); 
   return NULL;
 }
 /****************************************************************/

@@ -12,6 +12,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
 
 #include <xcb/xcb.h>
 #include <xcb/xproto.h>
@@ -20,25 +24,11 @@
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_keysyms.h>
 
-
-/* ********************** */
-/* The WM Current status  */
-typedef struct 
-{
-  xcb_connection_t *xconn;  /* the XCB Connection */
-  xcb_screen_t     *screen; /* The screen info    */  
-  int              mode;    /* Flag to say if we are moving or resizing */	
-  uint32_t pixel;
-  uint32_t pointerx;
-  uint32_t pointery;
-} t_wmstatus;
-
-
 /* *********************** */
 
-
-/* Global definitions */
-#define MODE_MOVE 2   /* We're currently moving a window with the mouse.   */
-#define MODE_RESIZE 3 /* We're currently resizing a window with the mouse. */
-
 #define MAX_WINDOWS_ALLOWED 200 
+
+
+xcb_atom_t getatom(char *atom_name);
+ 
+ 
