@@ -32,11 +32,18 @@ void mr_events_execute_callback (xcb_generic_event_t *ev)
 {
 	
 	switch(ev->response_type & ~0x80) {
-		case XCB_MOTION_NOTIFY:  mr_deal_with_motion_notify(ev); break;
-		case XCB_BUTTON_PRESS:   mr_deal_with_button_press(ev); break;
-		case XCB_BUTTON_RELEASE: mr_deal_with_button_release(ev); break;
-	    case XCB_MAP_REQUEST:    mr_deal_with_map_request(ev); break;
-	    case XCB_DESTROY_NOTIFY: mr_deal_with_destroy_notify(ev); break;
+		case XCB_MOTION_NOTIFY:  	mr_deal_with_motion_notify(ev); break;
+		case XCB_BUTTON_PRESS:   	mr_deal_with_button_press(ev); break;
+		case XCB_BUTTON_RELEASE: 	mr_deal_with_button_release(ev); break;
+	    case XCB_MAP_REQUEST:    	mr_deal_with_map_request(ev); break;
+	    case XCB_MAP_NOTIFY:    	mr_deal_with_map_notify(ev); break;
+	    case XCB_MAPPING_NOTIFY:    mr_deal_with_mapping_notify(ev); break;
+	    case XCB_DESTROY_NOTIFY: 	mr_deal_with_destroy_notify(ev); break;
+   	    case XCB_CREATE_NOTIFY:		mr_deal_with_create_notify(ev); break;
+	    case XCB_CONFIGURE_REQUEST: mr_deal_with_configure_request(ev); break;
+	    case XCB_CONFIGURE_NOTIFY:  mr_deal_with_configure_notify(ev); break;
+	    case XCB_RESIZE_REQUEST:	mr_deal_with_resize_request(ev); break;
+	    case XCB_CLIENT_MESSAGE:	mr_deal_with_client_message(ev); break;
 	    default:                 fprintf(stderr,"Other event detected unknown: %d\n",ev->response_type & ~0x80); break;
 	};
  }	
@@ -221,3 +228,108 @@ void mr_deal_with_destroy_notify (xcb_generic_event_t *ev)
 }
 
 
+/*******************************************************/
+/* Configure Request                                   */
+/*******************************************************/
+void mr_deal_with_configure_request (xcb_generic_event_t *ev) 
+{
+ uint32_t x = 0;
+ uint32_t y = 0;
+   
+  xcb_configure_request_event_t * e = (xcb_configure_request_event_t *) ev;
+  uint32_t  id=e->window;
+  fprintf(stderr,">> Within Configure Request for window %d\n",id);
+  
+   /* If the request was to resize */
+   if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH)  { x = e->width; }
+   if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) { y = e->height; }
+   if (x && y ) { 
+	              fprintf(stderr,"Within configure request we want to change size to %d %d\n",x,y);
+	              mr_window_set_size(id,x,y);
+	            }
+   
+   /* If the request was to come upfront */
+   if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE)
+     {
+       uint32_t values[1];         
+       values[0] = e->stack_mode;
+       xcb_configure_window(xconn, id,
+                                 XCB_CONFIG_WINDOW_STACK_MODE,
+                                 values);
+      }             
+ }
+
+
+/*******************************************************/
+/* Configure Notify                                    */
+/*******************************************************/
+void mr_deal_with_configure_notify (xcb_generic_event_t *ev) 
+{
+  xcb_configure_notify_event_t * e = (xcb_configure_notify_event_t *) ev;
+  uint32_t  id=e->window;
+  fprintf(stderr,">> Entramos por el configure notify para la ventana %d\n",id);
+}
+
+
+/*******************************************************/
+/* Resize Request                                   */
+/*******************************************************/
+void mr_deal_with_resize_request (xcb_generic_event_t *ev) 
+{
+  xcb_resize_request_event_t * e = (xcb_resize_request_event_t *) ev;
+  uint32_t  id=e->window;
+  fprintf(stderr,">> Within Resize Request for window %d\n",id);
+  
+}
+
+
+/*******************************************************/
+/* Create Notify                                       */
+/*******************************************************/
+void mr_deal_with_create_notify (xcb_generic_event_t *ev) 
+{
+  xcb_create_notify_event_t * e = (xcb_create_notify_event_t *) ev;
+  uint32_t  id=e->window;
+  fprintf(stderr,">> Within Create Notify for window %d\n",id);
+  
+}
+
+
+/*******************************************************/
+/* Map Notify                                       */
+/*******************************************************/
+void mr_deal_with_map_notify (xcb_generic_event_t *ev) 
+{
+  xcb_map_notify_event_t * e = (xcb_map_notify_event_t *) ev;
+  uint32_t  id=e->window;
+  fprintf(stderr,">> Within Map Notify for window %d\n",id);
+  
+}
+
+
+/*******************************************************/
+/* Mapping Notify                                       */
+/*******************************************************/
+void mr_deal_with_mapping_notify (xcb_generic_event_t *ev) 
+{
+  xcb_mapping_notify_event_t * e = (xcb_mapping_notify_event_t *) ev;
+  fprintf(stderr,">> Within Mapping Notify with request %d\n",e->request);
+  
+}
+
+
+/*******************************************************/
+/* Client Message                                      */
+/*******************************************************/
+void mr_deal_with_client_message (xcb_generic_event_t *ev) 
+{
+  xcb_client_message_event_t * e = (xcb_client_message_event_t *) ev;
+  uint32_t  id=e->window;
+  
+  xcb_client_message_data_t data = e->data;
+  uint32_t x = data.data32[0]; 
+  fprintf(stderr,">> Within Client Message for window %d\n",id);
+  fprintf(stderr,"          Type %d\n",e->type);
+  fprintf(stderr,"          Data %d \n", x );
+  
+}

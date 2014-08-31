@@ -82,16 +82,14 @@ int main ()
     free(col_reply);
     /**************************************************/
  
-                                        
+
+                                                           
     atom_desktop = getatom("_NET_WM_DESKTOP");
     wm_delete_window = getatom("WM_DELETE_WINDOW");
     wm_change_state = getatom("WM_CHANGE_STATE");
     wm_state = getatom("WM_STATE");
     wm_protocols = getatom("WM_PROTOCOLS");
-    
-
-   
-
+           
 
     /* *********************************************************** */
     /* Tho subscribe the WM to the events we want to listen        */
@@ -102,6 +100,8 @@ int main ()
     xcb_void_cookie_t cookie =
         xcb_change_window_attributes_checked(xconn, xscreen->root, mask, &values);
     xcb_generic_error_t * xerror = xcb_request_check(xconn, cookie);
+    
+    xcb_warp_pointer(xconn, XCB_NONE, xscreen->root, 0, 0, 0, 0, 400, 400); 
     
     xcb_flush(xconn); /* We want all the settings to take effect before going into the loop */
     

@@ -30,9 +30,17 @@
 void mr_events_execute_callback (xcb_generic_event_t *ev);
 void mr_deal_with_button_press (xcb_generic_event_t *ev);
 void mr_deal_with_map_request (xcb_generic_event_t *ev);
+void mr_deal_with_map_notify (xcb_generic_event_t *ev);
+void mr_deal_with_mapping_notify (xcb_generic_event_t *ev);
 void mr_deal_with_motion_notify (xcb_generic_event_t *ev);
 void mr_deal_with_button_release (xcb_generic_event_t *ev);
 void mr_deal_with_destroy_notify (xcb_generic_event_t *ev);
+void mr_deal_with_configure_request (xcb_generic_event_t *ev);
+void mr_deal_with_configure_notify (xcb_generic_event_t *ev);
+void mr_deal_with_resize_request (xcb_generic_event_t *ev);
+void mr_deal_with_create_notify (xcb_generic_event_t *ev);
+void mr_deal_with_client_message (xcb_generic_event_t *ev);
+
 
 
 
