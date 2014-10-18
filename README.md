@@ -1,20 +1,19 @@
-marcelino
+MARCELINO
 =========
 
-Yet another tiny XCB Window Manager developed in C.
+MARCELINO tries to be yet another simply window manager, using XCB as much as posible instead Xlib.
+I've initially tried to develop it from scratch, however the documentation is ( that is only my opinion )
+"limited" in detail and basically I got frustrated. So I've decided to fork a project that fits nicely 
+what I was looking for, this project is MCWM ( See below Original project ).
 
-Initially started from Tiny WM XCB Version, then I started to look into other Window Managers like
-MCWM and follow its tracks trying to understand the XCB protocol and how to implement a Window Manager.
-After that I've started to gather all the info I could about XCB which it seems it is sort of a challenge.
+NOTE: Don't even try to compile it, it does not work yet and it is a very much work in Progress.
 
-The aim of this new WM is to be used in my own Linux Distro ( Lombix ), so I can create a Desktop integrated 
-the way I want. Custom is my motto. Apart from this at this stage I cannot tell much more for the simple fact 
-I've not done it yet. 
+Original MCWM:
+       http://hack.org/mc/projects/mcwm/
+       Author: http://hack.org/mc/bio.html Michael Cardell Widerkrantz 
 
-
-NOTE: Don't even try to compile it, it does not work yet and it is a very much In Progress work.
-
-References: http://incise.org/tinywm.html ( Tiny WM )
+Some useful references I've been finding
+        http://incise.org/tinywm.html ( Tiny WM )
 	    https://github.com/rtyler/tinywm-ada/blob/master/tinywm-xcb.c ( Tiny WM XCB version )
 	    http://hack.org/mc/hacks/mcwm ( MCWM )
 	    http://awesome.naquadah.org ( AWESOME )
@@ -24,3 +23,6 @@ References: http://incise.org/tinywm.html ( Tiny WM )
 Documentation: http://xcb.freedesktop.org/manual/group__XCB____API.html ( XCB API )
                http://xcb.freedesktop.org/tutorial/events/
                http://xcb.freedesktop.org/windowcontextandmanipulation/
+               
+
+               
