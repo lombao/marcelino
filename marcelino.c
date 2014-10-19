@@ -73,13 +73,10 @@ extern int randrbase;                  /* Beginning of RANDR extension events. *
 
 extern struct client *focuswin;        /* Current focus window. */
 
-int sigcode;                    /* Signal code. Non-zero if we've been
-                                 * interruped by a signal. */
 
 /***********************/
 /* Function prototypes */    
 static void printhelp(void);
-static void sigcatch(int sig);    
 static uint32_t getcolor(const char *colstr);
 static xcb_atom_t getatom(char *atom_name);
 static int setupscreen(void);
@@ -98,14 +95,6 @@ void printhelp(void)
     printf("  -u colour sets colour for unfocused window borders.");
     printf("  -x color sets colour for fixed window borders.");    
 }
-
-/****************************/
-/* Signal management        */
-void sigcatch(int sig)
-{
-    sigcode = sig;
-}
-
 
 
 /******************************************************/
@@ -304,7 +293,10 @@ uint32_t getcolor(const char *colstr)
 }
 
 
-/* Let's start */
+
+/***********************************************************/
+/*         MAIN                                          ***/
+/***********************************************************/
 int main(int argc, char **argv)
 {
     uint32_t mask = 0;
@@ -319,28 +311,13 @@ int main(int argc, char **argv)
     int scrno;
     xcb_screen_iterator_t iter;
     
-    /* Install signal handlers. */
-    /* We ignore child exists. Don't create zombies. */
-    if (SIG_ERR == signal(SIGCHLD, SIG_IGN))
-    {
-        perror("marcelino: signal");
-        exit(1);
-    }
+   
+    /* We don't want SIGCHILD at all, ignore it */
+    signal(SIGCHLD, SIG_IGN);
+    
 
-    if (SIG_ERR == signal(SIGINT, sigcatch))
-    {
-        perror("marcelino: signal");
-        exit(1);
-    }
-
-    if (SIG_ERR == signal(SIGTERM, sigcatch))
-    {
-        perror("marcelino: signal");
-        exit(1);
-    }
     
     /* Set up defaults. */
-    
     conf_set_borderwidth(BORDERWIDTH);
     conf_set_terminal(TERMINAL);
     conf_set_allowicons(ALLOWICONS);
@@ -501,9 +478,7 @@ int main(int argc, char **argv)
 
     /* Loop over events. */
     events();
-
-    /* Die gracefully. */
-    cleanup(sigcode);
+    cleanup(0);
 
     exit(0);
 }

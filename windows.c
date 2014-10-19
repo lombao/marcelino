@@ -2465,9 +2465,7 @@ void configurerequest(xcb_configure_request_event_t *e)
 
 void events(void)
 {
-	extern int sigcode;   /* Defined in main */
-    
-	
+		
     xcb_generic_event_t *ev;
     
     int16_t mode_x = 0;             /* X coord when in special mode */
@@ -2479,7 +2477,7 @@ void events(void)
     /* Get the file descriptor so we can do select() on it. */
     fd = xcb_get_file_descriptor(conn);
 
-    for (sigcode = 0; 0 == sigcode;)
+    while(1)
     {
         /* Prepare for select(). */
         FD_ZERO(&in);
