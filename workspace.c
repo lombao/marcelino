@@ -13,21 +13,12 @@
 #include "list.h"
 #include "windows.h"
 
-/* Number of workspaces. */
-#define WORKSPACES 10
 
-#ifdef DEBUG
-#define PDEBUG(Args...) \
-  do { fprintf(stderr, "mcwm: "); fprintf(stderr, ##Args); } while(0)
-#define D(x) x
-#else
-#define PDEBUG(Args...)
-#define D(x)
-#endif
+static uint32_t curws=0;                 /* Current workspace. */
+
 
 extern xcb_connection_t *conn;         /* Connection to X server. */
 extern xcb_screen_t     *screen;       /* Our current screen.  */
-extern uint32_t curws;             /* Current workspace. */
 extern struct client *focuswin;        /* Current focus window. */
 
 /*
@@ -52,23 +43,26 @@ static struct item *wslist[WORKSPACES] =
 
 /* Return a pointer to the address where the list of items start, in short the 
  * the list of items of the given workspace */
-struct item * * workspace_get(int b) {
- return &wslist[b];	
-}
+struct item * * workspace_get_wslist(int b) { return &wslist[b];}
 
-void workspace_set(int b,struct item * i) {
-  wslist[b] = i;	
-}
+/* The same as before but for the current Workspace */
+struct item ** workspace_get_wslist_current() { return &wslist[curws]; }
+
+
+void workspace_set(int b,struct item * i) { wslist[b] = i; }
 
 /* Returns the first item of a given workspace */
-struct item * workspace_get_firstitem(int b) {
-  return wslist[b];
-}
+struct item * workspace_get_firstitem(int b) { return wslist[b]; }
 
 /* returns true if there are not windows in that workspace */
-bool workspace_isempty(int b) {
-	return (wslist[b] == NULL);
-}
+bool workspace_isempty(int b) {	return (wslist[b] == NULL); }
+
+
+/* set current workspace */
+void workspace_set_currentws(uint32_t b) { curws = b; }
+
+/* get current workspace */
+uint32_t workspace_get_currentws() { return curws; }
 
 
 /* Add a window, specified by client, to workspace ws. */

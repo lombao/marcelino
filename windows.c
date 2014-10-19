@@ -66,26 +66,12 @@
 #endif
 
 
-
-
-/* Types. */
-
-
 /* Functions declerations. */
 #include "windows.h"
 
 
 #include "workspace.h"
 
-/**************************************/
-#ifdef DEBUG
-#define PDEBUG(Args...) \
-  do { fprintf(stderr, "marcelino: "); fprintf(stderr, ##Args); } while(0)
-#define D(x) x
-#else
-#define PDEBUG(Args...)
-#define D(x)
-#endif
 
 
 
@@ -94,7 +80,7 @@
 extern xcb_connection_t *conn;         /* Connection to X server. */
 extern xcb_screen_t     *screen;       /* Our current screen.  */
 extern int randrbase;                  /* Beginning of RANDR extension events. */
-extern uint32_t curws;             /* Current workspace. */
+
 struct client *focuswin;        /* Current focus window. */
 struct client *lastfocuswin;        /* Last focused window. NOTE! Only
                                      * used to communicate between
@@ -191,11 +177,11 @@ void finishtabbing(void)
     
     if (NULL != lastfocuswin)
     {
-        movetohead(workspace_get(curws), lastfocuswin->wsitem[curws]);
+        movetohead(workspace_get_wslist_current(), lastfocuswin->wsitem[workspace_get_currentws()]);
         lastfocuswin = NULL;             
     }
                 
-    movetohead(workspace_get(curws), focuswin->wsitem[curws]);
+    movetohead(workspace_get_wslist_current(), focuswin->wsitem[workspace_get_currentws()]);
 }
 
 /*
@@ -385,7 +371,7 @@ void fixwindow(struct client *client, bool setcolour)
     if (client->fixed)
     {
         client->fixed = false;
-        setwmdesktop(client->id, curws);
+        setwmdesktop(client->id, workspace_get_currentws());
 
         if (setcolour)
         {
@@ -398,7 +384,7 @@ void fixwindow(struct client *client, bool setcolour)
         /* Delete from all workspace lists except current. */
         for (ws = 0; ws < WORKSPACES; ws ++)
         {
-            if (ws != curws)
+            if (ws != workspace_get_currentws())
             {
                 delfromworkspace(client, ws);
             }
@@ -419,7 +405,7 @@ void fixwindow(struct client *client, bool setcolour)
         /* Add window to all workspace lists. */
         for (ws = 0; ws < WORKSPACES; ws ++)
         {
-            if (ws != curws)
+            if (ws != workspace_get_currentws())
             {
                 addtoworkspace(client, ws);
             }
@@ -676,7 +662,7 @@ void newwin(xcb_window_t win)
     }
 
     /* Add this window to the current workspace. */
-    addtoworkspace(client, curws);
+    addtoworkspace(client, workspace_get_currentws());
 
     /*
      * If the client doesn't say the user specified the coordinates
@@ -1243,7 +1229,7 @@ void focusnext(bool reverse)
     }
 #endif
 
-    if (workspace_isempty(curws))
+    if (workspace_isempty(workspace_get_currentws()))
     {
         PDEBUG("No windows to focus on in this workspace.\n");
         return;
@@ -1263,12 +1249,12 @@ void focusnext(bool reverse)
     }
     
     /* If we currently have no focus focus first in list. */
-    if (NULL == focuswin || NULL == focuswin->wsitem[curws])
+    if (NULL == focuswin || NULL == focuswin->wsitem[workspace_get_currentws()])
     {
-        PDEBUG("Focusing first in list: %p\n", wslist[curws]);
-        client = workspace_get_firstitem(curws)->data;
+        PDEBUG("Focusing first in list: %p\n", wslist[workspace_get_currentws()]);
+        client = workspace_get_firstitem(workspace_get_currentws())->data;
 
-        if (NULL != focuswin && NULL == focuswin->wsitem[curws])
+        if (NULL != focuswin && NULL == focuswin->wsitem[workspace_get_currentws()])
         {
             PDEBUG("XXX Our focused window %d isn't on this workspace!\n",
                    focuswin->id);
@@ -1278,16 +1264,16 @@ void focusnext(bool reverse)
     {
         if (reverse)
         {
-            if (NULL == focuswin->wsitem[curws]->prev)
+            if (NULL == focuswin->wsitem[workspace_get_currentws()]->prev)
             {
                 /*
                  * We were at the head of list. Focusing on last
                  * window in list unless we were already there.
                  */
-                struct item *last = workspace_get_firstitem(curws);
+                struct item *last = workspace_get_firstitem(workspace_get_currentws());
                 while (NULL != last->next)
                     last = last->next;
-                if (focuswin->wsitem[curws] != last->data)
+                if (focuswin->wsitem[workspace_get_currentws()] != last->data)
                 {
                     PDEBUG("Beginning of list. Focusing last in list: %p\n",
                            last);
@@ -1298,31 +1284,31 @@ void focusnext(bool reverse)
             {
                 /* Otherwise, focus the next in list. */
                 PDEBUG("Tabbing. Focusing next: %p.\n",
-                       focuswin->wsitem[curws]->prev);
-                client = focuswin->wsitem[curws]->prev->data;
+                       focuswin->wsitem[workspace_get_currentws()]->prev);
+                client = focuswin->wsitem[workspace_get_currentws()]->prev->data;
             }
         }
         else
         {
-            if (NULL == focuswin->wsitem[curws]->next)
+            if (NULL == focuswin->wsitem[workspace_get_currentws()]->next)
             {
                 /*
                  * We were at the end of list. Focusing on first window in
                  * list unless we were already there.
                  */
-                if (focuswin->wsitem[curws] != workspace_get_firstitem(curws)->data)
+                if (focuswin->wsitem[workspace_get_currentws()] != workspace_get_firstitem(workspace_get_currentws())->data)
                 {
                     PDEBUG("End of list. Focusing first in list: %p\n",
-                           wslist[curws]);
-                    client = workspace_get_firstitem(curws)->data;
+                           wslist[workspace_get_currentws()]);
+                    client = workspace_get_firstitem(workspace_get_currentws())->data;
                 }
             }
             else
             {
                 /* Otherwise, focus the next in list. */
                 PDEBUG("Tabbing. Focusing next: %p.\n",
-                       focuswin->wsitem[curws]->next);            
-                client = focuswin->wsitem[curws]->next->data;
+                       focuswin->wsitem[workspace_get_currentws()]->next);            
+                client = focuswin->wsitem[workspace_get_currentws()]->next->data;
             }
         }
     } /* if NULL focuswin */
@@ -2491,9 +2477,9 @@ void handle_keypress(xcb_key_press_event_t *ev)
             break;
 
 	case KEY_PREVWS:
-	    if (curws > 0)
+	    if (workspace_get_currentws() > 0)
 	    {
-		changeworkspace(curws - 1);
+		changeworkspace(workspace_get_currentws() - 1);
 	    }
 	    else
 	    {
@@ -2502,7 +2488,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
 	    break;
 
 	case KEY_NEXTWS:
-	    changeworkspace((curws + 1) % WORKSPACES);
+	    changeworkspace((workspace_get_currentws() + 1) % WORKSPACES);
 	    break;
 
         default:
@@ -3232,12 +3218,12 @@ void events(void)
                              */
                             if (NULL != focuswin)
                             {
-                                movetohead(workspace_get(curws),
-                                           focuswin->wsitem[curws]);
+                                movetohead(workspace_get_wslist_current(),
+                                           focuswin->wsitem[workspace_get_currentws()]);
                                 lastfocuswin = NULL;                 
                             }
 
-                            movetohead(workspace_get(curws), client->wsitem[curws]);
+                            movetohead(workspace_get_wslist_current(), client->wsitem[workspace_get_currentws()]);
                         } /* if not tabbing */
 
                         setfocus(client);
@@ -3394,7 +3380,7 @@ void events(void)
              * we need to keep track of our own windows and ignore
              * UnmapNotify on them.
              */
-            for (item = workspace_get_firstitem(curws); item != NULL; item = item->next)
+            for (item = workspace_get_firstitem(workspace_get_currentws()); item != NULL; item = item->next)
             {
                 client = item->data;
                 

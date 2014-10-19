@@ -20,6 +20,7 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
 
+#include "config.h"
 #include "list.h"
 #include "windows.h"
 #include "mrandr.h"
@@ -35,15 +36,7 @@ extern xcb_screen_t     *screen;       /* Our current screen.  */
 extern struct item *winlist ;    /* Global list of all client windows. */
 extern struct item *monlist ;    /* List of all physical monitor outputs. */
 
-/**************************************/
-#ifdef DEBUG
-#define PDEBUG(Args...) \
-  do { fprintf(stderr, "marcelino: "); fprintf(stderr, ##Args); } while(0)
-#define D(x) x
-#else
-#define PDEBUG(Args...)
-#define D(x)
-#endif
+
 
 
 /***************************************************/

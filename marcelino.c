@@ -64,17 +64,6 @@
 /* Workspace */
 #include "workspace.h"
 
-/**************************************/
-#ifdef DEBUG
-#define PDEBUG(Args...) \
-  do { fprintf(stderr, "marcelino: "); fprintf(stderr, ##Args); } while(0)
-#define D(x) x
-#else
-#define PDEBUG(Args...)
-#define D(x)
-#endif
-
-
 
 /*************************************************/
 /* GLOBAL VARIABLES                              */
@@ -86,7 +75,7 @@ xcb_atom_t wm_change_state;
 xcb_atom_t wm_state;
 xcb_atom_t wm_protocols;        /* WM_PROTOCOLS.  */
 extern int randrbase;                  /* Beginning of RANDR extension events. */
-uint32_t curws = 0;             /* Current workspace. */
+
 extern struct client *focuswin;        /* Current focus window. */
 
 int sigcode;                    /* Signal code. Non-zero if we've been
@@ -213,7 +202,7 @@ int setupscreen(void)
                 if (ws == NET_WM_FIXED)
                 {
                     /* Add to current workspace. */
-                    addtoworkspace(client, curws);                    
+                    addtoworkspace(client, workspace_get_currentws());                    
                     /* Add to all other workspaces. */
                     fixwindow(client, false);
                 }
@@ -221,7 +210,7 @@ int setupscreen(void)
                 {
                     addtoworkspace(client, ws);
                     /* If it's not our current workspace, hide it. */
-                    if (ws != curws)
+                    if (ws != workspace_get_currentws())
                     {
                         xcb_unmap_window(conn, client->id);
                     }
@@ -232,7 +221,7 @@ int setupscreen(void)
                      * No workspace hint at all. Just add it to our
                      * current workspace.
                      */
-                    addtoworkspace(client, curws);
+                    addtoworkspace(client, workspace_get_currentws());
                 }
             }
         }

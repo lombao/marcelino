@@ -1,19 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "config.h"
 #include "list.h"
+
 
 #ifdef DMALLOC
 #include "dmalloc.h"
 #endif
 
-#ifdef DEBUG
-#define PDEBUG(Args...) \
-  do { fprintf(stderr, "mcwm: "); fprintf(stderr, ##Args); } while(0)
-#define D(x) x
-#else
-#define PDEBUG(Args...)
-#define D(x)
-#endif
+
 
 /*
  * Move element in item to the head of list mainlist.

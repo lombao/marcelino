@@ -96,3 +96,22 @@
 #define USERKEY_PREVSCREEN      XK_comma
 #define USERKEY_NEXTSCREEN      XK_period
 #define USERKEY_ICONIFY         XK_I
+
+
+
+/* Number of workspaces. */
+/* Honestly, I think 10 is more than enough for anybody
+ * I don't think is necessary for this to be user configurable
+ * option
+ */
+#define WORKSPACES 10
+
+/**********************************/
+#ifdef DEBUG
+#define PDEBUG(Args...) \
+  do { fprintf(stderr, "marcelino: "); fprintf(stderr, ##Args); } while(0)
+#define D(x) x
+#else
+#define PDEBUG(Args...)
+#define D(x)
+#endif

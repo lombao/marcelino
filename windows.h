@@ -10,12 +10,10 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
 
+#include "config.h"
 
 /* Internal Constants. */
 
-
-/* Number of workspaces. */
-#define WORKSPACES 10
 
 /* We're currently moving a window with the mouse. */
 #define MCWM_MOVE 2
