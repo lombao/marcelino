@@ -4,8 +4,7 @@
  *
  * Copyright (c) 2014 Cesar Lombao
  *
- * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at
- * the domain hack.org.
+ * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,8 +18,6 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
-
 
 /* CORE includes */
 #include <stdlib.h>

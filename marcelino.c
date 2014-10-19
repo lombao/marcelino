@@ -4,8 +4,7 @@
  *
  * Copyright (c) 2014 Cesar Lombao
  *
- * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at
- * the domain hack.org.
+ * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -38,16 +37,10 @@
 
 /* XCB Sutff */
 #include <xcb/xcb.h>
-#include <xcb/randr.h>
-#include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
-
-/* X11 Keyboard handling */
-#include <X11/keysym.h>
-
 
 /* Internal Configuration */
 #include "conf.h"

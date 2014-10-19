@@ -3,7 +3,7 @@ DIST=marcelino-$(VERSION)
 SRC=marcelino.c windows.c list.c config.h events.h list.h 
 
 
-CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include #-DDEBUG 
+CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include 
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util 
 
 RM=/bin/rm

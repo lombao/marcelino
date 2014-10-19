@@ -1,14 +1,10 @@
 /*
- * mcwm, a small window manager for the X Window System using the X
- * protocol C Binding libraries.
+ * MARCELINO: a small window manager using XCB
+ * 
  *
- * For 'user' configurable stuff, see config.h.
+ * Copyright (c) 2014 Cesar Lombao
  *
- * MC, mc at the domain hack.org
- * http://hack.org/mc/
- *
- * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz, mc at
- * the domain hack.org.
+ * Copyright (c) 2010, 2011, 2012 Michael Cardell Widerkrantz
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,6 +18,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+ 
+ 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -37,29 +35,15 @@
 #include <sys/wait.h>
 #include <sys/select.h>
 
-#include <xcb/xcb.h>
-#include <xcb/randr.h>
-#include <xcb/xcb_atom.h>
-#include <xcb/xcb_icccm.h>
-
-
-#include <xcb/xproto.h>
-#include <xcb/xcb_util.h>
-
-#include "conf.h"
-
-#include "mrandr.h"
-
 #ifdef DEBUG
 #include "events.h"
 #endif
 
-#include "list.h"
 
-/* Check here for user configurable parts: */
 #include "config.h"
-
-
+#include "conf.h"
+#include "mrandr.h"
+#include "list.h"
 #include "windows.h"
 #include "workspace.h"
 #include "keyboard.h"

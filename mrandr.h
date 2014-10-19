@@ -1,6 +1,6 @@
 
 
-
+#include <xcb/randr.h>
 
 int setuprandr(void);
 void getrandr(void);

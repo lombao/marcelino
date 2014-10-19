@@ -1,10 +1,10 @@
 
 #include <xcb/xcb.h>
-#include <xcb/randr.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
-
-
+#include <xcb/xproto.h>
+#include <xcb/xcb_util.h>
+#include <xcb/randr.h>
 
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
