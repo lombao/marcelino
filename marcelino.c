@@ -61,6 +61,9 @@
 /* Windows */
 #include "windows.h"
 
+/* Workspace */
+#include "workspace.h"
+
 /**************************************/
 #ifdef DEBUG
 #define PDEBUG(Args...) \

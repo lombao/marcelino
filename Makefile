@@ -10,7 +10,7 @@ RM=/bin/rm
 PREFIX=/usr
 
 TARGETS=marcelino
-OBJS=marcelino.o list.o windows.o conf.o mrandr.o
+OBJS=marcelino.o list.o windows.o conf.o mrandr.o workspace.o
 
 all: $(TARGETS)
 
@@ -27,6 +27,8 @@ windows.o:	windows.c windows.h events.h list.h config.h Makefile
 mrandr.o:	mrandr.c mrandr.h Makefile
 
 conf.o: conf.c conf.h
+
+workspace.o:	workspace.c workspace.h
 
 install: $(TARGETS)
 	install -m 755 marcelino $(PREFIX)/bin

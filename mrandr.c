@@ -20,6 +20,7 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
 
+#include "list.h"
 #include "windows.h"
 #include "mrandr.h"
 

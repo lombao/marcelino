@@ -50,6 +50,8 @@
 
 #include "conf.h"
 
+#include "mrandr.h"
+
 #ifdef DEBUG
 #include "events.h"
 #endif
@@ -72,6 +74,8 @@
 /* Functions declerations. */
 #include "windows.h"
 
+
+#include "workspace.h"
 
 /**************************************/
 #ifdef DEBUG
@@ -187,11 +191,11 @@ void finishtabbing(void)
     
     if (NULL != lastfocuswin)
     {
-        movetohead(&wslist[curws], lastfocuswin->wsitem[curws]);
+        movetohead(workspace_get(curws), lastfocuswin->wsitem[curws]);
         lastfocuswin = NULL;             
     }
                 
-    movetohead(&wslist[curws], focuswin->wsitem[curws]);
+    movetohead(workspace_get(curws), focuswin->wsitem[curws]);
 }
 
 /*
@@ -362,108 +366,6 @@ int32_t getwmdesktop(xcb_drawable_t win)
 bad:
     free(reply);
     return MCWM_NOWS;
-}
-
-/* Add a window, specified by client, to workspace ws. */
-void addtoworkspace(struct client *client, uint32_t ws)
-{
-    struct item *item;
-    
-    item = additem(&wslist[ws]);
-    if (NULL == item)
-    {
-        PDEBUG("addtoworkspace: Out of memory.\n");
-        return;
-    }
-
-    /* Remember our place in the workspace window list. */
-    client->wsitem[ws] = item;
-
-    /* Remember the data. */
-    item->data = client;
-
-    /*
-     * Set window hint property so we can survive a crash.
-     * 
-     * Fixed windows have their own special WM hint. We don't want to
-     * mess with that.
-     */
-    if (!client->fixed)
-    {
-        setwmdesktop(client->id, ws);
-    }
-}
-
-/* Delete window client from workspace ws. */
-void delfromworkspace(struct client *client, uint32_t ws)
-{
-    delitem(&wslist[ws], client->wsitem[ws]);
-
-    /* Reset our place in the workspace window list. */
-    client->wsitem[ws] = NULL;
-}
-
-/* Change current workspace to ws. */
-void changeworkspace(uint32_t ws)
-{
-    struct item *item;
-    struct client *client;
-    
-    if (ws == curws)
-    {
-        PDEBUG("Changing to same workspace!\n");
-        return;
-    }
-
-    PDEBUG("Changing from workspace #%d to #%d\n", curws, ws);
-
-    /*
-     * We lose our focus if the window we focus isn't fixed. An
-     * EnterNotify event will set focus later.
-     */
-    if (NULL != focuswin && !focuswin->fixed)
-    {
-        setunfocus(focuswin->id);
-        focuswin = NULL;
-    }
-    
-    /* Go through list of current ws. Unmap everything that isn't fixed. */
-    for (item = wslist[curws]; item != NULL; item = item->next)
-    {
-        client = item->data;
-
-        PDEBUG("changeworkspace. unmap phase. ws #%d, client-fixed: %d\n",
-               curws, client->fixed);
-
-        if (!client->fixed)
-        {
-            /*
-             * This is an ordinary window. Just unmap it. Note that
-             * this will generate an unnecessary UnmapNotify event
-             * which we will try to handle later.
-             */
-            xcb_unmap_window(conn, client->id);
-        }
-    } /* for */
-    
-    /* Go through list of new ws. Map everything that isn't fixed. */
-    for (item = wslist[ws]; item != NULL; item = item->next)
-    {
-        client = item->data;
-
-        PDEBUG("changeworkspace. map phase. ws #%d, client-fixed: %d\n",
-               ws, client->fixed);
-
-        /* Fixed windows are already mapped. Map everything else. */
-        if (!client->fixed)
-        {
-            xcb_map_window(conn, client->id);
-        }
-    }
-
-    xcb_flush(conn);
-
-    curws = ws;
 }
 
 /*
@@ -782,8 +684,8 @@ void newwin(xcb_window_t win)
      */
     if (!client->usercoord)
     {
-        int16_t pointx;
-        int16_t pointy;    
+        uint16_t pointx;
+        uint16_t pointy;    
         PDEBUG("Coordinates not set by user. Using pointer: %d,%d.\n",
                pointx, pointy);
 
@@ -1341,7 +1243,7 @@ void focusnext(bool reverse)
     }
 #endif
 
-    if (NULL == wslist[curws])
+    if (workspace_isempty(curws))
     {
         PDEBUG("No windows to focus on in this workspace.\n");
         return;
@@ -1364,7 +1266,7 @@ void focusnext(bool reverse)
     if (NULL == focuswin || NULL == focuswin->wsitem[curws])
     {
         PDEBUG("Focusing first in list: %p\n", wslist[curws]);
-        client = wslist[curws]->data;
+        client = workspace_get_firstitem(curws)->data;
 
         if (NULL != focuswin && NULL == focuswin->wsitem[curws])
         {
@@ -1382,7 +1284,7 @@ void focusnext(bool reverse)
                  * We were at the head of list. Focusing on last
                  * window in list unless we were already there.
                  */
-                struct item *last = wslist[curws];
+                struct item *last = workspace_get_firstitem(curws);
                 while (NULL != last->next)
                     last = last->next;
                 if (focuswin->wsitem[curws] != last->data)
@@ -1408,11 +1310,11 @@ void focusnext(bool reverse)
                  * We were at the end of list. Focusing on first window in
                  * list unless we were already there.
                  */
-                if (focuswin->wsitem[curws] != wslist[curws]->data)
+                if (focuswin->wsitem[curws] != workspace_get_firstitem(curws)->data)
                 {
                     PDEBUG("End of list. Focusing first in list: %p\n",
                            wslist[curws]);
-                    client = wslist[curws]->data;
+                    client = workspace_get_firstitem(curws)->data;
                 }
             }
             else
@@ -2087,7 +1989,7 @@ void hide(struct client *client)
     xcb_flush(conn);
 }
 
-bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y)
+bool getpointer(xcb_drawable_t win, uint16_t *x, uint16_t *y)
 {
     xcb_query_pointer_reply_t *pointer;
     
@@ -2106,7 +2008,7 @@ bool getpointer(xcb_drawable_t win, int16_t *x, int16_t *y)
     return true;
 }
 
-bool getgeom(xcb_drawable_t win, int16_t *x, int16_t *y, uint16_t *width,
+bool getgeom(xcb_drawable_t win, uint16_t *x, uint16_t *y, uint16_t *width,
              uint16_t *height)
 {
     xcb_get_geometry_reply_t *geom;
@@ -2669,8 +2571,8 @@ void configurerequest(xcb_configure_request_event_t *e)
 {
     struct client *client;
     struct winconf wc;
-    int16_t mon_x;
-    int16_t mon_y;
+    uint16_t mon_x;
+    uint16_t mon_y;
     uint16_t mon_width;
     uint16_t mon_height;
 
@@ -3034,8 +2936,8 @@ void events(void)
             }
             else
             {
-                int16_t pointx;
-                int16_t pointy;
+                uint16_t pointx;
+                uint16_t pointy;
 
                 /* We're moving or resizing. */
 
@@ -3330,12 +3232,12 @@ void events(void)
                              */
                             if (NULL != focuswin)
                             {
-                                movetohead(&wslist[curws],
+                                movetohead(workspace_get(curws),
                                            focuswin->wsitem[curws]);
                                 lastfocuswin = NULL;                 
                             }
 
-                            movetohead(&wslist[curws], client->wsitem[curws]);
+                            movetohead(workspace_get(curws), client->wsitem[curws]);
                         } /* if not tabbing */
 
                         setfocus(client);
@@ -3492,7 +3394,7 @@ void events(void)
              * we need to keep track of our own windows and ignore
              * UnmapNotify on them.
              */
-            for (item = wslist[curws]; item != NULL; item = item->next)
+            for (item = workspace_get_firstitem(curws); item != NULL; item = item->next)
             {
                 client = item->data;
                 
