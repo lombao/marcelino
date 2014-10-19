@@ -3,14 +3,14 @@ DIST=marcelino-$(VERSION)
 SRC=marcelino.c windows.c list.c config.h events.h list.h 
 
 
-CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include #-DDEBUG #-DDMALLOC
-LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util #-ldmalloc
+CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include #-DDEBUG 
+LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util 
 
 RM=/bin/rm
 PREFIX=/usr
 
 TARGETS=marcelino
-OBJS=marcelino.o list.o windows.o conf.o mrandr.o workspace.o
+OBJS=marcelino.o list.o windows.o conf.o mrandr.o workspace.o keyboard.o
 
 all: $(TARGETS)
 
@@ -29,6 +29,8 @@ mrandr.o:	mrandr.c mrandr.h Makefile
 conf.o: conf.c conf.h
 
 workspace.o:	workspace.c workspace.h
+
+keyboard.o:		keyboard.c keyboard.h
 
 install: $(TARGETS)
 	install -m 755 marcelino $(PREFIX)/bin

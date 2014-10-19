@@ -1,11 +1,10 @@
 
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
-#include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
 
-#include <X11/keysym.h>
+
 
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
@@ -33,41 +32,6 @@
 /* This means we didn't get any window hint at all. */
 #define MCWM_NOWS 0xfffffffe
 
-/* All our key shortcuts. */
-typedef enum {
-    KEY_F,
-    KEY_H,
-    KEY_J,
-    KEY_K,
-    KEY_L,
-    KEY_M,
-    KEY_R,
-    KEY_RET,
-    KEY_X,
-    KEY_TAB,
-    KEY_BACKTAB,
-    KEY_1,
-    KEY_2,
-    KEY_3,
-    KEY_4,
-    KEY_5,
-    KEY_6,
-    KEY_7,
-    KEY_8,
-    KEY_9,
-    KEY_0,
-    KEY_Y,
-    KEY_U,
-    KEY_B,
-    KEY_N,
-    KEY_END,
-    KEY_PREVSCR,
-    KEY_NEXTSCR,
-    KEY_ICONIFY,    
-    KEY_PREVWS,
-    KEY_NEXTWS,
-    KEY_MAX
-} key_enum_t;
 
 struct sizepos
 {
@@ -130,23 +94,15 @@ struct client
 
 struct client *setupwin(xcb_window_t win);
 void finishtabbing(void);
-struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
 void cleanup(int code);
 void arrangewindows(void);
 void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 int32_t getwmdesktop(xcb_drawable_t win);
-
 void fixwindow(struct client *client, bool setcolour);
 void forgetclient(struct client *client);
 void forgetwin(xcb_window_t win);
 void fitonscreen(struct client *client);
 void newwin(xcb_window_t win);
-
-xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym,xcb_key_symbols_t *keysyms);
-int setupkeys(void);
-
-
-
 void arrbymon(struct monitor *monitor);
 struct monitor *findmonitor(xcb_randr_output_t id);
 struct monitor *findclones(xcb_randr_output_t id, int16_t x, int16_t y);

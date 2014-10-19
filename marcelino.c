@@ -64,6 +64,8 @@
 /* Workspace */
 #include "workspace.h"
 
+/* Keyboard handling */
+#include "keyboard.h"
 
 /*************************************************/
 /* GLOBAL VARIABLES                              */

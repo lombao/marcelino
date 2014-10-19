@@ -39,11 +39,9 @@
 
 #include <xcb/xcb.h>
 #include <xcb/randr.h>
-#include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
 
-#include <X11/keysym.h>
 
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
@@ -61,18 +59,10 @@
 /* Check here for user configurable parts: */
 #include "config.h"
 
-#ifdef DMALLOC
-#include "dmalloc.h"
-#endif
 
-
-/* Functions declerations. */
 #include "windows.h"
-
-
 #include "workspace.h"
-
-
+#include "keyboard.h"
 
 
 /* Globals */
@@ -89,60 +79,6 @@ struct client *lastfocuswin;        /* Last focused window. NOTE! Only
 struct item *winlist = NULL;    /* Global list of all client windows. */
 struct item *monlist = NULL;    /* List of all physical monitor outputs. */
 int mode = 0;                   /* Internal mode, such as move or resize */
-
-
-
-/* Shortcut key type and initializiation. */
-struct keys
-{
-    xcb_keysym_t keysym;
-    xcb_keycode_t keycode;
-} keys[KEY_MAX] =
-{
-    { USERKEY_FIX, 0 },
-    { USERKEY_MOVE_LEFT, 0 },
-    { USERKEY_MOVE_DOWN, 0 },
-    { USERKEY_MOVE_UP, 0 },
-    { USERKEY_MOVE_RIGHT, 0 },
-    { USERKEY_MAXVERT, 0 },
-    { USERKEY_RAISE, 0 },
-    { USERKEY_TERMINAL, 0 },
-    { USERKEY_MAX, 0 },
-    { USERKEY_CHANGE, 0 },
-    { USERKEY_BACKCHANGE, 0 },
-    { USERKEY_WS1, 0 },
-    { USERKEY_WS2, 0 },
-    { USERKEY_WS3, 0 },
-    { USERKEY_WS4, 0 },
-    { USERKEY_WS5, 0 },
-    { USERKEY_WS6, 0 },
-    { USERKEY_WS7, 0 },
-    { USERKEY_WS8, 0 },
-    { USERKEY_WS9, 0 },
-    { USERKEY_WS10, 0 },
-    { USERKEY_TOPLEFT, 0 },
-    { USERKEY_TOPRIGHT, 0 },
-    { USERKEY_BOTLEFT, 0 },
-    { USERKEY_BOTRIGHT, 0 },
-    { USERKEY_DELETE, 0 },
-    { USERKEY_PREVSCREEN, 0 },
-    { USERKEY_NEXTSCREEN, 0 },
-    { USERKEY_ICONIFY, 0 },    
-    { USERKEY_PREVWS, 0 },
-    { USERKEY_NEXTWS, 0 },
-};    
-
-/* All keycodes generating our MODKEY mask. */
-struct modkeycodes
-{
-    xcb_keycode_t *keycodes;
-    unsigned len;
-} modkeys =
-{
-    NULL,
-    0
-};
-
 
 
 extern xcb_atom_t atom_desktop;        /*
@@ -182,83 +118,6 @@ void finishtabbing(void)
     }
                 
     movetohead(workspace_get_wslist_current(), focuswin->wsitem[workspace_get_currentws()]);
-}
-
-/*
- * Find out what keycode modmask is bound to. Returns a struct. If the
- * len in the struct is 0 something went wrong.
- */
-struct modkeycodes getmodkeys(xcb_mod_mask_t modmask)
-{
-    xcb_get_modifier_mapping_cookie_t cookie;
-    xcb_get_modifier_mapping_reply_t *reply;
-    xcb_keycode_t *modmap;
-    struct modkeycodes keycodes = {
-        NULL,
-        0
-    };
-    int mask;
-    unsigned i;
-    const xcb_mod_mask_t masks[8] = { XCB_MOD_MASK_SHIFT,
-                                      XCB_MOD_MASK_LOCK,
-                                      XCB_MOD_MASK_CONTROL,
-                                      XCB_MOD_MASK_1,
-                                      XCB_MOD_MASK_2,
-                                      XCB_MOD_MASK_3,
-                                      XCB_MOD_MASK_4,
-                                      XCB_MOD_MASK_5 };
-
-    cookie = xcb_get_modifier_mapping_unchecked(conn);
-
-    if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL)
-    {
-        return keycodes;
-    }
-
-    if (NULL == (keycodes.keycodes = calloc(reply->keycodes_per_modifier,
-                                            sizeof (xcb_keycode_t))))
-    {
-        PDEBUG("Out of memory.\n");
-        return keycodes;
-    }
-    
-    modmap = xcb_get_modifier_mapping_keycodes(reply);
-
-    /*
-     * The modmap now contains keycodes.
-     *
-     * The number of keycodes in the list is 8 *
-     * keycodes_per_modifier. The keycodes are divided into eight
-     * sets, with each set containing keycodes_per_modifier elements.
-     *
-     * Each set corresponds to a modifier in masks[] in the order
-     * specified above.
-     *
-     * The keycodes_per_modifier value is chosen arbitrarily by the
-     * server. Zeroes are used to fill in unused elements within each
-     * set.
-     */
-    for (mask = 0; mask < 8; mask ++)
-    {
-        if (masks[mask] == modmask)
-        {
-            for (i = 0; i < reply->keycodes_per_modifier; i ++)
-            {
-                if (0 != modmap[mask * reply->keycodes_per_modifier + i])
-                {
-                    keycodes.keycodes[i]
-                        = modmap[mask * reply->keycodes_per_modifier + i];
-                    keycodes.len ++;
-                }
-            }
-            
-            PDEBUG("Got %d keycodes.\n", keycodes.len);
-        }
-    } /* for mask */
-    
-    free(reply);
-    
-    return keycodes;
 }
 
 /*
@@ -863,113 +722,6 @@ struct client *setupwin(xcb_window_t win)
     return client;
 }
 
-/*
- * Get a keycode from a keysym.
- *
- * Returns keycode value. 
- */
-xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
-{
-    xcb_keycode_t *keyp;
-    xcb_keycode_t key;
-
-    /* We only use the first keysymbol, even if there are more. */
-    keyp = xcb_key_symbols_get_keycode(keysyms, keysym);
-    if (NULL == keyp)
-    {
-        fprintf(stderr, "mcwm: Couldn't look up key. Exiting.\n");
-        exit(1);
-        return 0;
-    }
-
-    key = *keyp;
-    free(keyp);
-    
-    return key;
-}
-
-/*
- * Set up all shortcut keys.
- *
- * Returns 0 on success, non-zero otherwise. 
- */
-int setupkeys(void)
-{
-    xcb_key_symbols_t *keysyms;
-    unsigned i;
-    
-    /* Get all the keysymbols. */
-    keysyms = xcb_key_symbols_alloc(conn);
-
-    /*
-     * Find out what keys generates our MODKEY mask. Unfortunately it
-     * might be several keys.
-     */
-    if (NULL != modkeys.keycodes)
-    {
-        free(modkeys.keycodes);
-    }
-    modkeys = getmodkeys(MODKEY);
-
-    if (0 == modkeys.len)
-    {
-        fprintf(stderr, "We couldn't find any keycodes to our main modifier "
-                "key!\n");
-        return -1;
-    }
-
-    for (i = 0; i < modkeys.len; i ++)
-    {
-        /*
-         * Grab the keys that are bound to MODKEY mask with any other
-         * modifier.
-         */
-        xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY,
-                     modkeys.keycodes[i],
-                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);    
-    }
-    
-    /* Now grab the rest of the keys with the MODKEY modifier. */
-    for (i = KEY_F; i < KEY_MAX; i ++)
-    {
-	if (XK_VoidSymbol == keys[i].keysym)
-	{
-	    keys[i].keycode = 0;
-	    continue;
-	}
-
-        keys[i].keycode = keysymtokeycode(keys[i].keysym, keysyms);        
-        if (0 == keys[i].keycode)
-        {
-            /* Couldn't set up keys! */
-    
-            /* Get rid of key symbols. */
-            xcb_key_symbols_free(keysyms);
-
-            return -1;
-        }
-            
-        /* Grab other keys with a modifier mask. */
-        xcb_grab_key(conn, 1, screen->root, MODKEY, keys[i].keycode,
-                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-
-        /*
-         * XXX Also grab it's shifted counterpart. A bit ugly here
-         * because we grab all of them not just the ones we want.
-         */
-        xcb_grab_key(conn, 1, screen->root, MODKEY | SHIFTMOD,
-                     keys[i].keycode,
-                     XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-    } /* for */
-
-    /* Need this to take effect NOW! */
-    xcb_flush(conn);
-    
-    /* Get rid of the key symbols table. */
-    xcb_key_symbols_free(keysyms);
-    
-    return 0;
-}
 
 
 
@@ -2297,7 +2049,7 @@ void handle_keypress(xcb_key_press_event_t *ev)
     
     for (key = KEY_MAX, i = KEY_F; i < KEY_MAX; i ++)
     {
-        if (ev->detail == keys[i].keycode && 0 != keys[i].keycode)
+        if (ev->detail == keyboard_keys_get_keycode(i) && 0 != keyboard_keys_get_keycode(i))
         {
             key = i;
             break;
@@ -3147,11 +2899,11 @@ void events(void)
                  * Check if it's the that was released was a key
                  * generating the MODKEY mask.
                  */
-                for (i = 0; i < modkeys.len; i ++)
+                for (i = 0; i < keyboard_modkey_get_len(); i ++)
                 {
-                    PDEBUG("Is it %d?\n", modkeys.keycodes[i]);
+                    PDEBUG("Is it %d?\n", keyboard_modkey_get_keycodes(i));
                     
-                    if (e->detail == modkeys.keycodes[i])
+                    if (e->detail == keyboard_modkey_get_keycodes(i))
                     {
                         finishtabbing();
 
