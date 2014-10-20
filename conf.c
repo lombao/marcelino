@@ -30,7 +30,9 @@
 #include <string.h>
 #include <signal.h>
 #include <assert.h>
+#include <ctype.h>
 
+#include "conf.h"
 
 #define MAX_PATH 256
 #define MAX_CFG_LINE 128
@@ -64,12 +66,8 @@ char terminal[MAX_PATH]="/usr/bin/xterm";   /* path to the terminal console */
 char colorfocus[MAX_LEN_COLOR_NAME]="chocolate1";
 char colorunfocus[MAX_LEN_COLOR_NAME]="grey40";
 char colorfixed[MAX_LEN_COLOR_NAME]="grey90";
-
-uint32_t movestep    = 32;         /* pixels for each moved step when moving windows */
+uint32_t movesteppixels    = 32;         /* pixels for each moved step when moving windows */
 uint32_t borderwidth = 1;          /* Do we draw borders? If so, how large? */    
-uint32_t focuscol    = 1;          /* Focused border colour. */
-uint32_t unfocuscol  = 2;          /* Unfocused border colour.  */
-uint32_t fixedcol    = 3;          /* Fixed windows border colour. */
 bool     allowicons   = false;      /* Allow windows to be unmapped. */    
 
 
@@ -78,7 +76,7 @@ uint32_t conf_get_borderwidth(void)       { return borderwidth; }
 char *    conf_get_focuscol(void)         { return colorfocus; }
 char *    conf_get_unfocuscol(void)       { return colorunfocus; }
 char *    conf_get_fixedcol(void)         { return colorfixed; }
-uint32_t conf_get_movestep(void)         { return movestep; }
+uint32_t conf_get_movestep(void)         { return movesteppixels; }
 
 bool       conf_get_allowicons(void)         { return allowicons; }
 char *    conf_get_terminal(void)           { return terminal; }
@@ -132,7 +130,7 @@ void conf_upload_conf_file(char * cfgfile) {
  
    /* check if we can read the file */
    if ( ! access ( cfgfile, R_OK ) ) { 
- 	  perror("ERROR: %s doesn't exist!\n",cfgfile);
+ 	  fprintf(stderr,"ERROR: %s doesn't exist!\n",cfgfile);
       exit (-1);
    }
    
@@ -153,14 +151,14 @@ void conf_upload_conf_file(char * cfgfile) {
     /* If it's a comment line then ignore */
     if (*linetrim == '#' ) { continue; }
     
-    key   = strtok(linetrim," ");
-    value = strtok(NULL," ");
+    char * key   = strtok(linetrim," ");
+    char * value = strtok(NULL," ");
     
-    if ( key   == NULL ) { perror "Syntax error in line number %d\n",counterline); exit(-1); }
-    if ( value == NULL ) { perror "Syntax error in line number %d\n",counterline); exit(-1); }
+    if ( key   == NULL ) { fprintf(stderr,"Syntax error in line number %d\n",counterline); exit(-1); }
+    if ( value == NULL ) { fprintf(stderr,"Syntax error in line number %d\n",counterline); exit(-1); }
         
     for (a=0;a<=PARAM_BORDER_WIDTH;a++) {
-      if (strncomp(paramstrings[a],key,strlen(paramstrings[a])) == 0) { conf_set(a,value)); }
+      if (strncmp(paramstrings[a],key,strlen(paramstrings[a])) == 0) { conf_set(a,value); }
     }
 		
    } /* end while */
@@ -171,17 +169,17 @@ void conf_upload_conf_file(char * cfgfile) {
 /******************************************************/
 void conf_set( uint16_t p, char * val) {
   switch (p) {
-	  case PARAM_MOVE_STEP: movestep=strtol(val,NULL,10);
+	  case PARAM_MOVE_STEP: movesteppixels=strtol(val,NULL,10);
 	                        break;
 	  case PARAM_TERMINAL:  strncpy(terminal,val,MAX_PATH);
 	                        break;
 	  case PARAM_BORDER_WIDTH: borderwidth=strtol(val,NULL,10);
 	                            break;
-	  case PARAM_COLOR_FOCUS_WINDOW: strncpy(colorfocuswindow,val,MAX_LEN_COLOR_NAME);
+	  case PARAM_COLOR_FOCUS_WINDOW: strncpy(colorfocus,val,MAX_LEN_COLOR_NAME);
 	                                  break;
-	  case PARAM_COLOR_UNFOCUS_WINDOW: strncpy(colorunfocuswindow,val,MAX_LEN_COLOR_NAME);
+	  case PARAM_COLOR_UNFOCUS_WINDOW: strncpy(colorunfocus,val,MAX_LEN_COLOR_NAME);
 	                                  break;
-	  case PARAM_COLOR_FIXED_WINDOW: strncpy(colorfixedwindow,val,MAX_LEN_COLOR_NAME);
+	  case PARAM_COLOR_FIXED_WINDOW: strncpy(colorfixed,val,MAX_LEN_COLOR_NAME);
 	                                  break;
 	                                    
   }	

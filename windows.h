@@ -91,7 +91,7 @@ struct client
 };
 
 
-static uint32_t getcolor(const char *colstr);
+uint32_t getcolor(const char *colstr);
 struct client *setupwin(xcb_window_t win);
 void finishtabbing(void);
 void cleanup(int code);

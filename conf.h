@@ -1,3 +1,13 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <errno.h>
+#include <getopt.h>
+#include <string.h>
+#include <signal.h>
+#include <assert.h>
 
 /*
  * Use this modifier combined with other keys to control wm from
@@ -97,7 +107,8 @@ char *   conf_get_terminal(void);
 uint32_t conf_get_movestep(void);
 
 
-void conf_determine_user_configfile(int argc , char ** argv)
+void conf_determine_user_configfile(int argc , char ** argv);
 void conf_upload_conf_file(char * cfgfile);
 void conf_set( uint16_t p, char * val);
+void conf_upload_conf_file(char * cfgfile);
 void conf_upload_default_cfg_global_file(void);

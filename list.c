@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "config.h"
+#include "conf.h"
 #include "list.h"
 
 

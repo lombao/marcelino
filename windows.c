@@ -283,7 +283,7 @@ void fixwindow(struct client *client, bool setcolour)
         if (setcolour)
         {
             /* Set border color to fixed colour. */
-            values[0] = conf_get_fixedcol();
+            values[0] = getcolor(conf_get_fixedcol());
             xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
                                          values);
         }
@@ -1172,7 +1172,7 @@ void setfocus(struct client *client)
     /* Set new border colour. */
     if (client->fixed)
     {
-        values[0] = conf_get_fixedcol();            
+        values[0] = getcolor(conf_get_fixedcol());            
     }
     else
     {

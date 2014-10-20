@@ -274,7 +274,7 @@ int main(int argc, char **argv)
     /* Note that we might have pass the config file as a parameter ( -c  ) */
     
     conf_upload_default_cfg_global_file();
-    conf_determine_personal_configfile(argc, argv);
+    conf_determine_user_configfile(argc, argv);
     
     
 

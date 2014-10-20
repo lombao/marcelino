@@ -7,7 +7,9 @@ CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include
 LDFLAGS+=-L/usr/local/lib -lxcb -lxcb-randr -lxcb-keysyms -lxcb-icccm -lxcb-util 
 
 RM=/bin/rm
+
 PREFIX=/usr
+SYSCONFDIR=/etc
 
 TARGETS=marcelino
 OBJS=marcelino.o list.o windows.o conf.o mrandr.o workspace.o keyboard.o
@@ -35,7 +37,7 @@ keyboard.o:		keyboard.c keyboard.h
 install: $(TARGETS)
 	install -m 755 marcelino $(PREFIX)/bin
 	install -m 644 marcelino.man $(PREFIX)/man/man1/marcelino.1
-	
+	install -m 644 marcelino.cfg $(SYSCONFDIR)
 
 uninstall: deinstall
 deinstall:
