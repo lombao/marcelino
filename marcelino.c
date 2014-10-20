@@ -278,7 +278,7 @@ int main(int argc, char **argv)
     
     
 
-    
+    workspace_init();
 
     /*
      * Use $DISPLAY. After connecting scrno will contain the value of

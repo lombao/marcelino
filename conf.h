@@ -105,6 +105,7 @@ char * conf_get_fixedcol(void);
 bool     conf_get_allowicons(void);
 char *   conf_get_terminal(void);
 uint32_t conf_get_movestep(void);
+uint32_t  	conf_get_workspaces(void);
 
 
 void conf_determine_user_configfile(int argc , char ** argv);

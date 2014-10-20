@@ -33,6 +33,7 @@
 #include <assert.h>
 
 #include "list.h"
+#include "conf.h"
 #include "windows.h"
 
 
@@ -47,21 +48,19 @@ extern struct client *focuswin;        /* Current focus window. */
  * Workspace list: Every workspace has a list of all visible
  * windows.
  */
-static struct item *wslist[WORKSPACES] =
-{
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-};
+static struct item **wslist;
 
 
+
+
+
+/* Initialize Workspaces */
+void workspace_init(void) {
+ int a;
+ 
+	wslist = (struct item * *)malloc(sizeof(struct item *));
+	for (a=0;a<conf_get_workspaces();a++) { wslist[a]=NULL; }
+}
 
 /* Return a pointer to the address where the list of items start, in short the 
  * the list of items of the given workspace */

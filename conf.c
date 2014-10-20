@@ -44,6 +44,7 @@
 #define PARAM_COLOR_UNFOCUS_WINDOW  3
 #define PARAM_COLOR_FIXED_WINDOW    4
 #define PARAM_BORDER_WIDTH          5
+#define PARAM_NUM_WORKSPACES        6
 
 
 char * paramstrings[] = {
@@ -52,7 +53,8 @@ char * paramstrings[] = {
 							"COLOR_FOCUS_WINDOW",
 							"COLOR_UNFOCUS_WINDOW",
 							"COLOR_FIXED_WINDOW",
-							"BORDER_WIDTH"
+							"BORDER_WIDTH",
+							"WORKSPACES"
 						};
 						
 
@@ -62,24 +64,27 @@ char cfgfile[MAX_PATH]="~/.config/marcelino.cfg";
 						
 /****************************************/						
 /* configuration variables and defaults */
+
 char terminal[MAX_PATH]="/usr/bin/xterm";   /* path to the terminal console */
 char colorfocus[MAX_LEN_COLOR_NAME]="chocolate1";
 char colorunfocus[MAX_LEN_COLOR_NAME]="grey40";
 char colorfixed[MAX_LEN_COLOR_NAME]="grey90";
 uint32_t movesteppixels    = 32;         /* pixels for each moved step when moving windows */
 uint32_t borderwidth = 1;          /* Do we draw borders? If so, how large? */    
-bool     allowicons   = false;      /* Allow windows to be unmapped. */    
+bool     allowicons   = false;      /* Allow windows to be unmapped. */ 
+uint32_t workspaces   = 4;   
 
 
 /******************************************/
-uint32_t conf_get_borderwidth(void)       { return borderwidth; }
-char *    conf_get_focuscol(void)         { return colorfocus; }
-char *    conf_get_unfocuscol(void)       { return colorunfocus; }
-char *    conf_get_fixedcol(void)         { return colorfixed; }
-uint32_t conf_get_movestep(void)         { return movesteppixels; }
+uint32_t 	conf_get_borderwidth(void)      { return borderwidth; }
+char *    	conf_get_focuscol(void)         { return colorfocus; }
+char *    	conf_get_unfocuscol(void)       { return colorunfocus; }
+char *    	conf_get_fixedcol(void)         { return colorfixed; }
+uint32_t 	conf_get_movestep(void)         { return movesteppixels; }
+bool       	conf_get_allowicons(void)       { return allowicons; }
+char *    	conf_get_terminal(void)         { return terminal; }
+uint32_t  	conf_get_workspaces(void)      	{ return workspaces; }
 
-bool       conf_get_allowicons(void)         { return allowicons; }
-char *    conf_get_terminal(void)           { return terminal; }
 
 
 /**************************************************************/
@@ -110,7 +115,6 @@ char ch;
     }
     
    conf_upload_conf_file(cfgfile);
-
 }
 
 
@@ -169,18 +173,19 @@ void conf_upload_conf_file(char * cfgfile) {
 /******************************************************/
 void conf_set( uint16_t p, char * val) {
   switch (p) {
-	  case PARAM_MOVE_STEP: movesteppixels=strtol(val,NULL,10);
-	                        break;
-	  case PARAM_TERMINAL:  strncpy(terminal,val,MAX_PATH);
-	                        break;
-	  case PARAM_BORDER_WIDTH: borderwidth=strtol(val,NULL,10);
-	                            break;
-	  case PARAM_COLOR_FOCUS_WINDOW: strncpy(colorfocus,val,MAX_LEN_COLOR_NAME);
-	                                  break;
-	  case PARAM_COLOR_UNFOCUS_WINDOW: strncpy(colorunfocus,val,MAX_LEN_COLOR_NAME);
-	                                  break;
-	  case PARAM_COLOR_FIXED_WINDOW: strncpy(colorfixed,val,MAX_LEN_COLOR_NAME);
-	                                  break;
-	                                    
+	  case PARAM_MOVE_STEP: 			movesteppixels=strtol(val,NULL,10);
+										break;
+	  case PARAM_TERMINAL:  			strncpy(terminal,val,MAX_PATH);
+										break;
+	  case PARAM_BORDER_WIDTH: 			borderwidth=strtol(val,NULL,10);
+										break;
+	  case PARAM_COLOR_FOCUS_WINDOW: 	strncpy(colorfocus,val,MAX_LEN_COLOR_NAME);
+										break;
+	  case PARAM_COLOR_UNFOCUS_WINDOW: 	strncpy(colorunfocus,val,MAX_LEN_COLOR_NAME);
+										break;
+	  case PARAM_COLOR_FIXED_WINDOW: 	strncpy(colorfixed,val,MAX_LEN_COLOR_NAME);
+										break;
+	  case PARAM_NUM_WORKSPACES: 	  	workspaces=strtol(val,NULL,10);
+										break;
   }	
 }

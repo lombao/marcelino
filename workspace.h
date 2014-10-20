@@ -2,7 +2,7 @@
 
 #include "conf.h"
 
-
+void workspace_init(void);
 struct item * * workspace_get_wslist(int b);
 struct item ** workspace_get_wslist_current();
 void workspace_set(int b,struct item * i);

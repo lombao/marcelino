@@ -7,8 +7,11 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
 
+
 /* X11 Keyboard handling */
 #include <X11/keysym.h>
+
+
 
 /* All our key shortcuts. */
 typedef enum {
