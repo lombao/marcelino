@@ -132,16 +132,11 @@ void conf_upload_conf_file(char * cfgfile) {
  uint16_t counterline = 0;
  uint16_t a;
  
-   /* check if we can read the file */
-   if ( ! access ( cfgfile, R_OK ) ) { 
- 	  fprintf(stderr,"ERROR: %s doesn't exist!\n",cfgfile);
-      exit (-1);
-   }
-   
+
    fp = fopen(cfgfile,"r");
    if(fp == NULL) {
       perror("Cannot open configuration file");
-      exit(-1);
+      exit(1);
    }  
    
    while(fgets(line, MAX_CFG_LINE, fp) != NULL)  {
