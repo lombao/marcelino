@@ -1,6 +1,6 @@
 
 
-#include "config.h"
+#include "conf.h"
 
 
 struct item * * workspace_get_wslist(int b);

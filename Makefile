@@ -1,6 +1,6 @@
 VERSION=20141018-1
 DIST=marcelino-$(VERSION)
-SRC=marcelino.c windows.c list.c config.h events.h list.h 
+SRC=marcelino.c windows.c list.c mrandr.c conf.c workspace.c keyboard.c events.h list.h 
 
 
 CFLAGS+=-g -std=c99 -Wall -Wextra -I/usr/local/include 
@@ -22,7 +22,7 @@ marcelino.o: marcelino.c Makefile
 
 list.o: list.c list.h Makefile
 
-windows.o:	windows.c windows.h events.h list.h config.h Makefile
+windows.o:	windows.c windows.h events.h list.h conf.h Makefile
 
 mrandr.o:	mrandr.c mrandr.h Makefile
 

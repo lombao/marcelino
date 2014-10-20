@@ -1,30 +1,17 @@
 .TH mcwm 1 "Apr 30, 2012" "" ""
 .SH NAME
-mcwm \- MC's Window Manager for X11.
+Marcelino \- A simple XCB Window Manager for X11.
 .SH SYNOPSIS
-.B mcwm
+.B marelino 
 [ 
-.B \-b 
-width ] 
 [ 
-.B \-i
-]
-[ 
-.B \-t 
-.I terminal-program
+.B \-c 
+.I configuration file 
 ] [ 
-.B \-f 
-.I colour
-] [ 
-.B \-u 
-.I colour
-] [ 
-.B \-x
-.I colour
 ]
 
 .SH DESCRIPTION
-.B mcwm\fP is a window manager for the X Window System.
+.B marcelino\fP is a window manager for the X Window System.
 
 .SH OPTIONS
 .PP

@@ -40,7 +40,7 @@
 #include <xcb/xproto.h>
 #include <xcb/xcb_util.h>
 
-#include "config.h"
+#include "conf.h"
 #include "list.h"
 #include "windows.h"
 #include "mrandr.h"

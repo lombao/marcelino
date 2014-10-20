@@ -32,7 +32,7 @@
 #include <assert.h>
 
 
-#include "config.h"
+#include "conf.h"
 #include "keyboard.h"
 
 extern xcb_connection_t *conn;         /* Connection to X server. */

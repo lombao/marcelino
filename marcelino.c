@@ -26,7 +26,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
-#include <getopt.h>
 #include <string.h>
 #include <signal.h>
 #include <assert.h>
@@ -44,9 +43,6 @@
 
 /* Internal Configuration */
 #include "conf.h"
-
-/* Custom configuration */
-#include "config.h"
 
 /* Randr */
 #include "mrandr.h"
@@ -76,26 +72,11 @@ extern struct client *focuswin;        /* Current focus window. */
 
 /***********************/
 /* Function prototypes */    
-static void printhelp(void);
-static uint32_t getcolor(const char *colstr);
+
 static xcb_atom_t getatom(char *atom_name);
 static int setupscreen(void);
     
                                  
-/****************************/
-/* Print Help               */
-void printhelp(void)
-{
-    printf("marcelino: Usage: marcelino [-b] [-t terminal-program] [-f colour] "
-           "[-u colour] [-x colour] \n");
-    printf("  -b means draw no borders\n");
-    printf("  -t urxvt will start urxvt when MODKEY + Return is pressed\n");
-    printf("  -f colour sets colour for focused window borders of focused "
-           "to a named color.\n");
-    printf("  -u colour sets colour for unfocused window borders.");
-    printf("  -x color sets colour for fixed window borders.");    
-}
-
 
 /******************************************************/
 /* Walk through all existing windows and set them up. */
@@ -268,29 +249,7 @@ xcb_atom_t getatom(char *atom_name)
 
 
 
-/***************************************************/
-/* Get the pixel values of a named colour colstr. */
-uint32_t getcolor(const char *colstr)
-{
-    xcb_alloc_named_color_reply_t *col_reply;    
-    xcb_colormap_t colormap; 
-    xcb_generic_error_t *error;
-    xcb_alloc_named_color_cookie_t colcookie;
 
-    colormap = screen->default_colormap;
-    colcookie = xcb_alloc_named_color(conn, colormap, strlen(colstr), colstr);
-    col_reply = xcb_alloc_named_color_reply(conn, colcookie, &error);
-    if (NULL != error)
-    {
-        fprintf(stderr, "mcwm: Couldn't get pixel value for colour %s. "
-                "Exiting.\n", colstr);
-
-        xcb_disconnect(conn);
-        exit(1);
-    }
-
-    return col_reply->pixel;
-}
 
 
 
@@ -301,13 +260,9 @@ int main(int argc, char **argv)
 {
     uint32_t mask = 0;
     uint32_t values[2];
-    int ch;                    /* Option character */
     xcb_void_cookie_t cookie;
     xcb_generic_error_t *error;
-    xcb_drawable_t root;
-    char *focuscol;
-    char *unfocuscol;
-    char *fixedcol;    
+    xcb_drawable_t root; 
     int scrno;
     xcb_screen_iterator_t iter;
     
@@ -315,58 +270,15 @@ int main(int argc, char **argv)
     /* We don't want SIGCHILD at all, ignore it */
     signal(SIGCHLD, SIG_IGN);
     
+    /* Upload configuration */
+    /* Note that we might have pass the config file as a parameter ( -c  ) */
+    
+    conf_upload_default_cfg_global_file();
+    conf_determine_personal_configfile(argc, argv);
+    
+    
 
     
-    /* Set up defaults. */
-    conf_set_borderwidth(BORDERWIDTH);
-    conf_set_terminal(TERMINAL);
-    conf_set_allowicons(ALLOWICONS);
-    focuscol = FOCUSCOL;
-    unfocuscol = UNFOCUSCOL;
-    fixedcol = FIXEDCOL;
-    
-    while (1)
-    {
-        ch = getopt(argc, argv, "b:it:f:u:x:");
-        if (-1 == ch)
-        {
-                
-            /* No more options, break out of while loop. */
-            break;
-        }
-        
-        switch (ch)
-        {
-        case 'b':
-            /* Border width */
-            conf_set_borderwidth(atoi(optarg));            
-            break;
-
-        case 'i':
-            conf_set_allowicons(true);
-            break;
-            
-        case 't':
-            conf_set_terminal(optarg);
-            break;
-
-        case 'f':
-            focuscol = optarg;
-            break;
-
-        case 'u':
-            unfocuscol = optarg;
-            break;
-
-        case 'x':
-            fixedcol = optarg;
-            break;
-            
-        default:
-            printhelp();
-            exit(0);
-        } /* switch */
-    }
 
     /*
      * Use $DISPLAY. After connecting scrno will contain the value of
@@ -399,12 +311,7 @@ int main(int argc, char **argv)
     
     PDEBUG("Screen size: %dx%d\nRoot window: %d\n", screen->width_in_pixels,
            screen->height_in_pixels, screen->root);
-    
-    /* Get some colours. */
-    conf_set_focuscol(getcolor(focuscol));
-    conf_set_unfocuscol(getcolor(unfocuscol));
-    conf_set_fixedcol(getcolor(fixedcol));
-    
+        
     /* Get some atoms. */
     atom_desktop = getatom("_NET_WM_DESKTOP");
     wm_delete_window = getatom("WM_DELETE_WINDOW");

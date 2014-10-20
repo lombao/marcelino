@@ -40,7 +40,7 @@
 #endif
 
 
-#include "config.h"
+
 #include "conf.h"
 #include "mrandr.h"
 #include "list.h"
@@ -197,6 +197,32 @@ bad:
     return MCWM_NOWS;
 }
 
+
+/***************************************************/
+/* Get the pixel values of a named colour colstr. */
+uint32_t getcolor(const char *colstr)
+{
+    xcb_alloc_named_color_reply_t *col_reply;    
+    xcb_colormap_t colormap; 
+    xcb_generic_error_t *error;
+    xcb_alloc_named_color_cookie_t colcookie;
+
+    colormap = screen->default_colormap;
+    colcookie = xcb_alloc_named_color(conn, colormap, strlen(colstr), colstr);
+    col_reply = xcb_alloc_named_color_reply(conn, colcookie, &error);
+    if (NULL != error)
+    {
+        fprintf(stderr, "mcwm: Couldn't get pixel value for colour %s. "
+                "Exiting.\n", colstr);
+
+        xcb_disconnect(conn);
+        exit(1);
+    }
+
+    return col_reply->pixel;
+}
+
+
 /*
  * Fix or unfix a window client from all workspaces. If setcolour is
  * set, also change back to ordinary focus colour when unfixing.
@@ -219,7 +245,7 @@ void fixwindow(struct client *client, bool setcolour)
         if (setcolour)
         {
             /* Set border color to ordinary focus colour. */
-            values[0] = conf_get_focuscol();
+            values[0] = getcolor(conf_get_focuscol());
             xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
                                          values);
         }
@@ -584,7 +610,7 @@ struct client *setupwin(xcb_window_t win)
     uint32_t ws;
     
     /* Set border color. */
-    values[0] = conf_get_unfocuscol();
+    values[0] = getcolor(conf_get_unfocuscol());
     xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
 
     /* Set border width. */
@@ -1081,9 +1107,8 @@ void setunfocus(xcb_drawable_t win)
     }
 
     /* Set new border colour. */
-    values[0] = conf_get_unfocuscol();
+    values[0] = getcolor(conf_get_unfocuscol());
     xcb_change_window_attributes(conn, win, XCB_CW_BORDER_PIXEL, values);
-
     xcb_flush(conn);
 }
 
@@ -1151,7 +1176,7 @@ void setfocus(struct client *client)
     }
     else
     {
-        values[0] = conf_get_focuscol();
+        values[0] = getcolor(conf_get_focuscol());
     }
 
     xcb_change_window_attributes(conn, client->id, XCB_CW_BORDER_PIXEL,
@@ -1325,8 +1350,8 @@ void resize(xcb_drawable_t win, uint16_t width, uint16_t height)
  */
 void resizestep(struct client *client, char direction)
 {
-    int step_x = MOVE_STEP;
-    int step_y = MOVE_STEP;
+    uint32_t step_x = conf_get_movestep();
+    uint32_t step_y = conf_get_movestep();
     
     if (NULL == client)
     {
@@ -1347,7 +1372,7 @@ void resizestep(struct client *client, char direction)
     }
     else
     {
-        step_x = MOVE_STEP;
+        step_x = conf_get_movestep();
     }
 
     if (client->height_inc > 1)
@@ -1356,7 +1381,7 @@ void resizestep(struct client *client, char direction)
     }
     else
     {
-        step_y = MOVE_STEP;        
+        step_y = conf_get_movestep();        
     }
 
     switch (direction)
@@ -1455,19 +1480,19 @@ void movestep(struct client *client, char direction)
     switch (direction)
     {
     case 'h':
-        client->x = client->x - MOVE_STEP;
+        client->x = client->x - conf_get_movestep();
         break;
 
     case 'j':
-        client->y = client->y + MOVE_STEP;
+        client->y = client->y + conf_get_movestep();
         break;
 
     case 'k':
-        client->y = client->y - MOVE_STEP;
+        client->y = client->y - conf_get_movestep();
         break;
 
     case 'l':
-        client->x = client->x + MOVE_STEP;
+        client->x = client->x + conf_get_movestep();
         break;
 
     default:
