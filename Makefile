@@ -36,7 +36,7 @@ keyboard.o:		keyboard.c keyboard.h
 
 install: $(TARGETS)
 	install -m 755 marcelino $(PREFIX)/bin
-	install -m 644 marcelino.man $(PREFIX)/man/man1/marcelino.1
+	install -m 644 marcelino.man $(PREFIX)/share/man/man1/marcelino.1
 	install -m 644 marcelino.cfg $(SYSCONFDIR)
 
 uninstall: deinstall
