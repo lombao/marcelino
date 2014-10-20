@@ -51,12 +51,9 @@ extern struct client *focuswin;        /* Current focus window. */
 static struct item **wslist;
 
 
-
-
-
 /* Initialize Workspaces */
 void workspace_init(void) {
- int a;
+ uint32_t a;
  
 	wslist = (struct item * *)malloc(sizeof(struct item *));
 	for (a=0;a<conf_get_workspaces();a++) { wslist[a]=NULL; }

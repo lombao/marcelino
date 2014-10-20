@@ -1,6 +1,5 @@
 /* XCB Sutff */
 #include <xcb/xcb.h>
-#include <xcb/randr.h>
 #include <xcb/xcb_keysyms.h>
 #include <xcb/xcb_atom.h>
 #include <xcb/xcb_icccm.h>
@@ -50,6 +49,25 @@ typedef enum {
 } key_enum_t;
 
 
+/*
+ * Use this modifier combined with other keys to control wm from
+ * keyboard. Default is Mod4, which on my keyboard is the Alt key but
+ * is usually the Windows key on more normal keyboard layouts.
+ */
+#define MODKEY XCB_MOD_MASK_4
+
+
+/*
+ * Modifier key to use with mouse buttons. Default Mod1, Meta on my
+ * keyboard.
+ */
+#define MOUSEMODKEY XCB_MOD_MASK_1
+
+
+/* Extra modifier for resizing. Default is Shift. */
+#define SHIFTMOD XCB_MOD_MASK_SHIFT
+
+
 /* Shortcut key type and initializiation. */
 struct keys
 {
@@ -73,7 +91,6 @@ void          keyboard_keys_set_keycode(int b,xcb_keycode_t keycode);
 
 uint32_t	  keyboard_modkey_get_len();
 xcb_keycode_t keyboard_modkey_get_keycodes(int b);
-
-struct modkeycodes getmodkeys(xcb_mod_mask_t modmask);
+struct modkeycodes keyboard_getmodkeys(xcb_mod_mask_t modmask);
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym,xcb_key_symbols_t *keysyms);
-int setupkeys(void);
+int keyboard_setupkeys(void);

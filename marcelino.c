@@ -277,7 +277,6 @@ int main(int argc, char **argv)
     conf_determine_user_configfile(argc, argv);
     
     
-
     workspace_init();
 
     /*
@@ -331,7 +330,7 @@ int main(int argc, char **argv)
     }
 
     /* Set up key bindings. */
-    if (0 != setupkeys())
+    if (0 != keyboard_setupkeys())
     {
         fprintf(stderr, "marcelino: Couldn't set up keycodes. Exiting.");
         xcb_disconnect(conn);

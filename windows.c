@@ -3111,7 +3111,7 @@ void events(void)
             xcb_ungrab_key(conn, XCB_GRAB_ANY, screen->root, XCB_MOD_MASK_ANY);
 
             /* Use the new ones. */
-            setupkeys();
+            keyboard_setupkeys();
         }
         break;
         

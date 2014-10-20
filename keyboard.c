@@ -35,6 +35,10 @@
 #include "conf.h"
 #include "keyboard.h"
 
+
+
+
+
 extern xcb_connection_t *conn;         /* Connection to X server. */
 extern xcb_screen_t     *screen;       /* Our current screen.  */
 
@@ -90,7 +94,7 @@ xcb_keycode_t keyboard_modkey_get_keycodes(int b) { return modkeys.keycodes[b]; 
  * Find out what keycode modmask is bound to. Returns a struct. If the
  * len in the struct is 0 something went wrong.
  */
-struct modkeycodes getmodkeys(xcb_mod_mask_t modmask)
+struct modkeycodes keyboard_getmodkeys(xcb_mod_mask_t modmask)
 {
     xcb_get_modifier_mapping_cookie_t cookie;
     xcb_get_modifier_mapping_reply_t *reply;
@@ -196,7 +200,7 @@ xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
  *
  * Returns 0 on success, non-zero otherwise. 
  */
-int setupkeys(void)
+int keyboard_setupkeys(void)
 {
     xcb_key_symbols_t *keysyms;
     unsigned i;
@@ -212,7 +216,7 @@ int setupkeys(void)
     {
         free(modkeys.keycodes);
     }
-    modkeys = getmodkeys(MODKEY);
+    modkeys = keyboard_getmodkeys(MODKEY);
 
     if (0 == modkeys.len)
     {

@@ -9,22 +9,7 @@
 #include <signal.h>
 #include <assert.h>
 
-/*
- * Use this modifier combined with other keys to control wm from
- * keyboard. Default is Mod4, which on my keyboard is the Alt key but
- * is usually the Windows key on more normal keyboard layouts.
- */
-#define MODKEY XCB_MOD_MASK_4
 
-
-/* Extra modifier for resizing. Default is Shift. */
-#define SHIFTMOD XCB_MOD_MASK_SHIFT
-
-/*
- * Modifier key to use with mouse buttons. Default Mod1, Meta on my
- * keyboard.
- */
-#define MOUSEMODKEY XCB_MOD_MASK_1
 
 
 /*
