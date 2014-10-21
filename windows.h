@@ -91,10 +91,8 @@ struct client
 };
 
 
-uint32_t getcolor(const char *colstr);
 struct client *setupwin(xcb_window_t win);
 void finishtabbing(void);
-void cleanup(int code);
 void arrangewindows(void);
 void setwmdesktop(xcb_drawable_t win, uint32_t ws);
 int32_t getwmdesktop(xcb_drawable_t win);
@@ -146,4 +144,4 @@ void nextscreen(void);
 void handle_keypress(xcb_key_press_event_t *ev);
 void configwin(xcb_window_t win, uint16_t mask, struct winconf wc);
 void configurerequest(xcb_configure_request_event_t *e);
-void events(void);
+void events(xcb_connection_t * conn,xcb_screen_t * screen);

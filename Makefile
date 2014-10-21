@@ -12,7 +12,7 @@ PREFIX=/usr
 SYSCONFDIR=/etc
 
 TARGETS=marcelino
-OBJS=marcelino.o list.o windows.o conf.o mrandr.o workspace.o keyboard.o
+OBJS=marcelino.o list.o windows.o conf.o mrandr.o workspace.o keyboard.o server.o
 
 all: $(TARGETS)
 
@@ -33,6 +33,8 @@ conf.o: conf.c conf.h
 workspace.o:	workspace.c workspace.h
 
 keyboard.o:		keyboard.c keyboard.h
+
+server.o:		server.c server.h
 
 install: $(TARGETS)
 	install -m 755 marcelino $(PREFIX)/bin

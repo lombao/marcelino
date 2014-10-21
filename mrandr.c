@@ -31,15 +31,6 @@
 #include <string.h>
 
 
-/* XCB Sutff */
-#include <xcb/xcb.h>
-#include <xcb/randr.h>
-#include <xcb/xcb_keysyms.h>
-#include <xcb/xcb_atom.h>
-#include <xcb/xcb_icccm.h>
-#include <xcb/xproto.h>
-#include <xcb/xcb_util.h>
-
 #include "conf.h"
 #include "list.h"
 #include "windows.h"
@@ -49,36 +40,35 @@
 int randrbase;                  /* Beginning of RANDR extension events. */
 
 
-extern xcb_connection_t *conn;         /* Connection to X server. */
-extern xcb_screen_t     *screen;       /* Our current screen.  */
-
-
 extern struct item *winlist ;    /* Global list of all client windows. */
 extern struct item *monlist ;    /* List of all physical monitor outputs. */
 
 
 
+/********************************************/
+int randr_get_base() { return randrbase; }
+
 
 /***************************************************/
 /* Set up RANDR extension                          */
-int setuprandr(void)
+void randr_init(xcb_connection_t * conn,xcb_screen_t * screen)
 {
-    const xcb_query_extension_reply_t *extension;
-    int base;
+  const xcb_query_extension_reply_t *extension;
+
         
     extension = xcb_get_extension_data(conn, &xcb_randr_id);
     if (!extension->present)
     {
         PDEBUG("No RANDR extension.\n");
-        return -1;
+        return;
     }
     else
     {
-        getrandr();
+        randr_get(conn,screen);
     }
 
-    base = extension->first_event;
-    PDEBUG("randrbase is %d.\n", base);
+    randrbase = extension->first_event;
+    PDEBUG("randrbase is %d.\n", randrbase);
         
     xcb_randr_select_input(conn, screen->root,
                            XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE |
@@ -86,16 +76,14 @@ int setuprandr(void)
                            XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE |
                            XCB_RANDR_NOTIFY_MASK_OUTPUT_PROPERTY);
 
-    xcb_flush(conn);
-
-    return base;
+    
 }
 
 
 /*
  * Get RANDR resources and figure out how many outputs there are.
  */ 
-void getrandr(void)
+void randr_get(xcb_connection_t * conn,xcb_screen_t * screen)
 {
     xcb_randr_get_screen_resources_current_cookie_t rcookie;
     xcb_randr_get_screen_resources_current_reply_t *res;
@@ -114,23 +102,11 @@ void getrandr(void)
 
     len = xcb_randr_get_screen_resources_current_outputs_length(res);
     outputs = xcb_randr_get_screen_resources_current_outputs(res);
-
+    free(res);
     PDEBUG("Found %d outputs.\n", len);
     
     /* Request information for all outputs. */
-    getoutputs(outputs, len, timestamp);
 
-    free(res);
-}
-
-
-
-/*
- * Walk through all the RANDR outputs (number of outputs == len) there
- * was at time timestamp.
- */
-void getoutputs(xcb_randr_output_t *outputs, int len, xcb_timestamp_t timestamp)
-{
     char *name;
     xcb_randr_get_crtc_info_cookie_t icookie;
     xcb_randr_get_crtc_info_reply_t *crtc = NULL;

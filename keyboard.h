@@ -93,4 +93,4 @@ uint32_t	  keyboard_modkey_get_len();
 xcb_keycode_t keyboard_modkey_get_keycodes(int b);
 struct modkeycodes keyboard_getmodkeys(xcb_mod_mask_t modmask);
 xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym,xcb_key_symbols_t *keysyms);
-int keyboard_setupkeys(void);
+int keyboard_init(xcb_connection_t * conn);

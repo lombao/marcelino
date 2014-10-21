@@ -33,14 +33,10 @@
 
 
 #include "conf.h"
+#include "server.h"
 #include "keyboard.h"
 
 
-
-
-
-extern xcb_connection_t *conn;         /* Connection to X server. */
-extern xcb_screen_t     *screen;       /* Our current screen.  */
 
 
 static struct keys keys[KEY_MAX] =
@@ -114,9 +110,9 @@ struct modkeycodes keyboard_getmodkeys(xcb_mod_mask_t modmask)
                                       XCB_MOD_MASK_4,
                                       XCB_MOD_MASK_5 };
 
-    cookie = xcb_get_modifier_mapping_unchecked(conn);
+    cookie = xcb_get_modifier_mapping_unchecked(server_get_conn());
 
-    if ((reply = xcb_get_modifier_mapping_reply(conn, cookie, NULL)) == NULL)
+    if ((reply = xcb_get_modifier_mapping_reply(server_get_conn(), cookie, NULL)) == NULL)
     {
         return keycodes;
     }
@@ -200,7 +196,7 @@ xcb_keycode_t keysymtokeycode(xcb_keysym_t keysym, xcb_key_symbols_t *keysyms)
  *
  * Returns 0 on success, non-zero otherwise. 
  */
-int keyboard_setupkeys(void)
+int keyboard_init(xcb_connection_t * conn)
 {
     xcb_key_symbols_t *keysyms;
     unsigned i;
@@ -231,7 +227,7 @@ int keyboard_setupkeys(void)
          * Grab the keys that are bound to MODKEY mask with any other
          * modifier.
          */
-        xcb_grab_key(conn, 1, screen->root, XCB_MOD_MASK_ANY,
+        xcb_grab_key(conn, 1, server_get_root(), XCB_MOD_MASK_ANY,
                      modkeys.keycodes[i],
                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);    
     }
@@ -257,20 +253,19 @@ int keyboard_setupkeys(void)
         }
             
         /* Grab other keys with a modifier mask. */
-        xcb_grab_key(conn, 1, screen->root, MODKEY, keys[i].keycode,
+        xcb_grab_key(conn, 1, server_get_root(), MODKEY, keys[i].keycode,
                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
         /*
          * XXX Also grab it's shifted counterpart. A bit ugly here
          * because we grab all of them not just the ones we want.
          */
-        xcb_grab_key(conn, 1, screen->root, MODKEY | SHIFTMOD,
+        xcb_grab_key(conn, 1, server_get_root(), MODKEY | SHIFTMOD,
                      keys[i].keycode,
                      XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
     } /* for */
 
-    /* Need this to take effect NOW! */
-    xcb_flush(conn);
+
     
     /* Get rid of the key symbols table. */
     xcb_key_symbols_free(keysyms);
