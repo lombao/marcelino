@@ -156,6 +156,9 @@ void conf_upload_conf_file(char * cfgfile) {
     if ( key   == NULL ) { continue; }
     if ( value == NULL ) { fprintf(stderr,"Syntax error in line number %d\n",counterline); exit(1); }
         
+    char * valuetrim=value;
+    while(*valuetrim != 0x0 ) { if (*valuetrim == '\n') { *valuetrim=0x0; break; } valuetrim++;}
+		   
     for (a=0;a<=PARAM_BORDER_WIDTH;a++) {
       if (strncmp(paramstrings[a],key,strlen(paramstrings[a])) == 0) { conf_set(a,value); }
     }
