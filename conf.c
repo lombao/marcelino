@@ -113,8 +113,8 @@ char ch;
              break;
         } /* switch */
     }
-    
-   conf_upload_conf_file(cfgfile);
+   
+   if (access(cfgfile,R_OK)==0) { conf_upload_conf_file(cfgfile); }
 }
 
 
@@ -135,7 +135,7 @@ void conf_upload_conf_file(char * cfgfile) {
 
    fp = fopen(cfgfile,"r");
    if(fp == NULL) {
-      perror("Cannot open configuration file");
+      fprintf(stderr,"Cannot open configuration file: %s.. Applying defaults.",cfgfile);
       exit(1);
    }  
    
@@ -153,8 +153,8 @@ void conf_upload_conf_file(char * cfgfile) {
     char * key   = strtok(linetrim," ");
     char * value = strtok(NULL," ");
     
-    if ( key   == NULL ) { fprintf(stderr,"Syntax error in line number %d\n",counterline); exit(-1); }
-    if ( value == NULL ) { fprintf(stderr,"Syntax error in line number %d\n",counterline); exit(-1); }
+    if ( key   == NULL ) { continue; }
+    if ( value == NULL ) { fprintf(stderr,"Syntax error in line number %d\n",counterline); exit(1); }
         
     for (a=0;a<=PARAM_BORDER_WIDTH;a++) {
       if (strncmp(paramstrings[a],key,strlen(paramstrings[a])) == 0) { conf_set(a,value); }

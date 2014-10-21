@@ -212,9 +212,8 @@ uint32_t getcolor(const char *colstr)
     col_reply = xcb_alloc_named_color_reply(conn, colcookie, &error);
     if (NULL != error)
     {
-        fprintf(stderr, "mcwm: Couldn't get pixel value for colour %s. "
-                "Exiting.\n", colstr);
-
+        fprintf(stderr, "marcelino: Couldn't get pixel value for colour %s.\n ", colstr);
+        
         xcb_disconnect(conn);
         exit(1);
     }
@@ -1013,7 +1012,7 @@ void focusnext(bool reverse)
     /* If we currently have no focus focus first in list. */
     if (NULL == focuswin || NULL == focuswin->wsitem[workspace_get_currentws()])
     {
-        PDEBUG("Focusing first in list: %p\n", wslist[workspace_get_currentws()]);
+       
         client = workspace_get_firstitem(workspace_get_currentws())->data;
 
         if (NULL != focuswin && NULL == focuswin->wsitem[workspace_get_currentws()])
@@ -1060,8 +1059,7 @@ void focusnext(bool reverse)
                  */
                 if (focuswin->wsitem[workspace_get_currentws()] != workspace_get_firstitem(workspace_get_currentws())->data)
                 {
-                    PDEBUG("End of list. Focusing first in list: %p\n",
-                           wslist[workspace_get_currentws()]);
+      
                     client = workspace_get_firstitem(workspace_get_currentws())->data;
                 }
             }

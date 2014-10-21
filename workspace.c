@@ -55,7 +55,7 @@ static struct item **wslist;
 void workspace_init(void) {
  uint32_t a;
  
-	wslist = (struct item * *)malloc(sizeof(struct item *));
+	wslist = (struct item * *)malloc(conf_get_workspaces()*sizeof(struct item *));
 	for (a=0;a<conf_get_workspaces();a++) { wslist[a]=NULL; }
 }
 
